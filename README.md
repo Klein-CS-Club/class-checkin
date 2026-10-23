@@ -24,10 +24,14 @@ The first run loads three demo classes with made-up names and a week of history.
 
 ## How it works
 
+- **Sidebar**: Attendance, Classes and Settings, then each period with how many students are here
+  today ("14/18"). Picking a period opens its attendance, and **Add class** adds one. The sidebar
+  button at the top collapses it to a 64px icon rail (periods show as number tiles) and opens it
+  again; the choice is remembered. Phones always get the rail.
 - **Classes** (`#/classes`): add a class with a "late after" time, then add students. You can paste names
   one per line, type a single name, or import a CSV. "Last, First" is flipped to "First Last", and names
   already on the roster are skipped.
-- **Attendance** (`#/attendance`): pick a class and a day. Statuses are worked out from check-in times:
+- **Attendance** (`#/attendance`): shows the period picked in the sidebar. Step through days with ‹ ›. Statuses are worked out from check-in times:
   **Present** at or before the late-after minute, **Late** after it, **Absent** with no check-in, and
   **Not yet** today until the late-after time. Tap P / L / A to override a status. **Edited · Undo** puts
   it back to automatic. **Mark rest present** fills in everyone still absent.
@@ -53,7 +57,7 @@ The first run loads three demo classes with made-up names and a week of history.
 | `js/format.js` | Local dates (`YYYY-MM-DD`), times, `escapeHtml` |
 | `js/seed.js` | Demo classes, made-up names only |
 | `js/modal.js`, `js/icons.js` | Modal, confirm dialog and inline SVG icons from the cash register |
-| `js/views/*.js` | Check-in kiosk, Attendance, Classes, Settings |
+| `js/views/*.js` | Sidebar, check-in kiosk, Attendance, Classes, Settings |
 
 ## Limits
 
