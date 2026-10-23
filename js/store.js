@@ -16,7 +16,8 @@ export const STATUSES = {
 
 function initialState() {
   return {
-    settings: { pin: '1234' },
+    settings: { pin: '1234', sidebarExpanded: true },
+    currentClassId: null, // the period picked in the sidebar
     classes: [],     // [{ id, name, lateAfter: 'HH:mm', students: [{ id, name }] }]
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
@@ -54,7 +55,14 @@ export function subscribe(fn) {
 
 export const classById = (id) => state.classes.find((c) => c.id === id);
 
-export const sortedStudents = (cls) => [...cls.students].sort((a, b) => compareByName(a.name, b.name));
+// The picked period, or the first one if none is picked or it was deleted.
+export const currentClass = () => classById(state.currentClassId) ?? state.classes[0] ?? null;
+
+export function selectClass(id) {
+  commit({ ...state, currentClassId: id });
+}
+
+export const sortedStudents =(cls) => [...cls.students].sort((a, b) => compareByName(a.name, b.name));
 
 // ---------- Classes and rosters ----------
 export function addClass(name, lateAfter) {
@@ -154,6 +162,11 @@ export function dayRows(classId, date) {
   }));
 }
 
+// How many students are here today (present or late, overrides included).
+export function hereToday(classId) {
+  return dayRows(classId, todayKey()).filter((r) => r.status === 'present' || r.status === 'late').length;
+}
+
 // status null clears the override, so the status goes back to automatic.
 export function setOverride(classId, date, studentId, status) {
   const overrides = { ...state.overrides };
@@ -186,6 +199,10 @@ export function stopKiosk(pin) {
 // ---------- Settings and data ----------
 export function setPin(pin) {
   commit({ ...state, settings: { ...state.settings, pin } });
+}
+
+export function setSidebarExpanded(sidebarExpanded) {
+  commit({ ...state, settings: { ...state.settings, sidebarExpanded } });
 }
 
 // Replaces classes and attendance with the demo set. Keeps the PIN.
