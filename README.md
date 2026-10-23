@@ -13,11 +13,13 @@ follows [gdpt-checkin](../gdpt-checkin).
 
 ```sh
 cd ~/dev/class-checkin
-python3 -m http.server 8130
+python3 serve.py
 ```
 
 Then open <http://localhost:8130>. You need to serve it over http because ES modules don't load from
-`file://`. To use a tablet on the same Wi-Fi, open `http://<this computer's IP>:8130` on the tablet.
+`file://`. `serve.py` is Python's built-in server with caching turned off, so a reload always picks up
+the latest CSS and JS. With plain `python3 -m http.server`, the browser can mix old and new files until
+you hard reload (Cmd+Shift+R). For another port, run `python3 serve.py 8140`. To use a tablet on the same Wi-Fi, open `http://<this computer's IP>:8130` on the tablet.
 Data lives in that tablet's browser.
 
 The first run loads three demo classes with made-up names and a week of history.
