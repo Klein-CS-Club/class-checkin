@@ -11,14 +11,19 @@
 </head>
 <body>
   <div class="app">
-    <nav class="sidebar" aria-label="Main">
-      <div class="logo" role="img" aria-label="Class Check-in">Class</div>
+    <nav class="sidebar" id="sidebar" aria-label="Main">
+      <div class="side-head">
+        <button class="sidebar-toggle" id="sidebar-toggle" aria-controls="sidebar"></button>
+        <span class="label brand">Class Check-in</span>
+      </div>
       <div class="nav-main" id="nav-main"></div>
+      <div class="section"><span class="label">Periods</span></div>
+      <div class="periods" id="periods"></div>
       <div class="nav-bottom" id="nav-bottom"></div>
+      <p class="label demo-note">Demo. Data stays on this device.</p>
     </nav>
     <main class="main" id="view"></main>
   </div>
-  <footer class="demo-note">Demo. Data stays on this device.</footer>
   <div id="modal-root"></div>
   <script type="module" src="js/app.js"></script>
 </body>

@@ -39,7 +39,8 @@
   --fast: 120ms;
   --med: 200ms;
 
-  --sidebar-w: 64px;
+  --sidebar-w: 260px;
+  --rail-w: 64px;
 }
 
 /* ---------- Base ---------- */
@@ -65,64 +66,90 @@ button:disabled { cursor: not-allowed; }
 /* ---------- App layout ---------- */
 .app { display: flex; height: 100vh; height: 100dvh; }
 
+/* ---------- Sidebar ----------
+   260px with labels, or the 64px icon rail. Items are 40px squares with 20px icons, and every
+   icon sits 32px from the left edge in both widths, so only the labels move. */
 .sidebar {
   width: var(--sidebar-w);
   flex: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
-  padding: 12px 0 16px;
+  padding: 12px 11px 16px 12px; /* 11px right + the 1px border keep rail items 40px wide */
+  overflow: hidden;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  transition: width 220ms var(--ease);
 }
-.logo {
+.app.rail .sidebar { width: var(--rail-w); }
+.label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 160ms var(--ease); }
+.app.rail .label { opacity: 0; pointer-events: none; }
+
+.side-head { display: flex; align-items: center; gap: 10px; height: 40px; margin-bottom: 16px; }
+.brand { font: 500 16px/1 Georgia, "Times New Roman", serif; }
+.sidebar-toggle {
   width: 40px; height: 40px;
-  display: grid; place-items: center;
-  margin-bottom: 16px;
-  border-radius: var(--radius-sm);
-  background: #e9edf0;
-  color: var(--text-2);
-  font: 500 11px/1 Georgia, "Times New Roman", serif;
-  letter-spacing: .02em;
-}
-.nav-main, .nav-bottom { display: flex; flex-direction: column; gap: 8px; }
-.nav-bottom { margin-top: auto; }
-.nav-item {
-  width: 40px; height: 40px;
+  flex: none;
   display: grid; place-items: center;
   border-radius: var(--radius-sm);
   color: var(--muted);
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
+.sidebar-toggle .icon { width: 20px; height: 20px; }
+.sidebar-toggle:hover { background: var(--surface-2); color: var(--text); }
+.app.narrow .sidebar-toggle { display: none; }
+
+.nav-main, .nav-bottom, .periods { display: flex; flex-direction: column; gap: 8px; }
+.nav-bottom { margin-top: auto; }
+.nav-item {
+  width: 100%; height: 40px;
+  flex: none;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
 .nav-item .icon { width: 20px; height: 20px; }
+.nav-item > .label { flex: 1; color: var(--text-2); }
 .nav-item:hover { background: var(--surface-2); color: var(--text); }
 .nav-item.active { background: var(--surface-2); color: var(--text); }
+.nav-item.active > .label { color: var(--text); font-weight: 600; }
+
+/* "Periods" heading; a short divider in the rail. */
+.section { position: relative; flex: none; height: 22px; margin-top: 4px; padding: 4px 0 0 10px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.section::after {
+  content: "";
+  position: absolute; left: 8px; top: 11px;
+  width: 24px; height: 1px;
+  background: var(--border);
+  opacity: 0;
+  transition: opacity 160ms var(--ease);
+}
+.app.rail .section::after { opacity: 1; }
+
+/* Each period has a number tile where the other items have an icon. */
+.period { padding-left: 9px; }
+.period-tile {
+  width: 22px; height: 22px;
+  flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.period.active .period-tile { border-color: var(--primary); background: var(--primary); color: #fff; }
+.nav-item > .count { flex: none; color: var(--muted); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.demo-note { margin: 0; padding: 0 10px; color: var(--muted); font-size: 11px; }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-.tabs {
-  display: flex;
-  gap: 8px;
-  padding: 12px 20px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex: none;
-}
-.tabs::-webkit-scrollbar { display: none; }
-.tab {
-  flex: none;
-  padding: 9px 18px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-2);
-  font-size: 15px;
-  font-weight: 500;
-  transition: background var(--fast) var(--ease), color var(--fast) var(--ease), border-color var(--fast) var(--ease);
-}
-.tab:hover { border-color: var(--border-strong); }
-.tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 /* ---------- Top bar ---------- */
 .topbar {
   flex: none;
@@ -375,7 +402,7 @@ button:disabled { cursor: not-allowed; }
 .roster .list-row { padding: 6px 8px 6px 16px; }
 
 /* ---------- Kiosk (check-in screen) ---------- */
-.kiosk-mode .sidebar, .kiosk-mode .demo-note { display: none; }
+.kiosk-mode .sidebar { display: none; }
 .kiosk {
   position: relative;
   flex: 1;
@@ -512,7 +539,6 @@ button:disabled { cursor: not-allowed; }
 /* ---------- Motion ---------- */
 .keypad button:active,
 .action:active,
-.tab:active,
 .seg button:active,
 .btn-primary:active:not(:disabled),
 .btn-secondary:active,
@@ -549,7 +575,6 @@ button:disabled { cursor: not-allowed; }
   flex-direction: column;
   gap: 16px;
 }
-.page-body > .tabs { padding: 0; }
 
 .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
 .stat-card {
@@ -650,19 +675,3 @@ button.list-row:hover { background: var(--surface-2); }
 .danger-zone .list-text { gap: 2px; }
 .danger-zone .list-title { white-space: normal; }
 .danger-zone .btn-secondary, .danger-zone .btn-danger { height: 38px; padding: 0 16px; font-size: 14px; flex: none; }
-/* ---------- Demo note ---------- */
-/* Fixed in the sidebar's empty middle, so it takes no layout space on any screen. */
-.demo-note {
-  position: fixed;
-  left: calc(var(--sidebar-w) / 2);
-  bottom: 120px;
-  translate: -50% 0;
-  writing-mode: vertical-rl;
-  rotate: 180deg;
-  font-size: 10px;
-  letter-spacing: .02em;
-  color: var(--muted);
-  pointer-events: none;
-  user-select: none;
-}
-@media print { .demo-note { display: none; } }

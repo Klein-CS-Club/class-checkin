@@ -15,7 +15,8 @@ const paths = {
   chevronLeft: '<path d="m15 6-6 6 6 6"/>',
   chevronRight: '<path d="m9 6 6 6-6 6"/>',
   play: '<path d="M7 5v14l11-7z"/>',
-  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
 };
 
 export function icon(name, cls = '') {

@@ -4,6 +4,7 @@ import { renderCheckin } from './views/checkin.js';
 import { renderAttendance } from './views/attendance.js';
 import { renderClasses } from './views/classes.js';
 import { renderSettings } from './views/settings.js';
+import { mountSidebar } from './views/sidebar.js';
 
 const routes = [
   { path: 'attendance', label: 'Attendance', icon: 'clipboard', group: 'main' },
@@ -23,7 +24,7 @@ let current = null;
 
 function renderNav() {
   const link = (r) =>
-    `<a href="#/${r.path}" class="nav-item" data-path="${r.path}" title="${r.label}" aria-label="${r.label}">${icon(r.icon)}</a>`;
+    `<a href="#/${r.path}" class="nav-item" data-path="${r.path}" title="${r.label}">${icon(r.icon)}<span class="label">${r.label}</span></a>`;
   document.getElementById('nav-main').innerHTML = routes.filter((r) => r.group === 'main').map(link).join('');
   document.getElementById('nav-bottom').innerHTML = routes.filter((r) => r.group === 'bottom').map(link).join('');
 }
@@ -39,7 +40,7 @@ function route() {
   const path = currentPath();
   if (`#/${path}` !== location.hash) history.replaceState(null, '', `#/${path}`);
   document.body.classList.toggle('kiosk-mode', path === 'checkin');
-  document.querySelectorAll('.nav-item').forEach((a) => {
+  document.querySelectorAll('.nav-item[data-path]').forEach((a) => {
     a.classList.toggle('active', a.dataset.path === path);
     if (a.dataset.path === path) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
@@ -52,6 +53,7 @@ function route() {
 }
 
 renderNav();
+mountSidebar();
 window.addEventListener('hashchange', route);
 // Starting or leaving the kiosk switches screens.
 subscribe(() => { if (currentPath() !== current) route(); });

@@ -1,5 +1,5 @@
 import { icon } from '../icons.js';
-import { getState, subscribe, classById, sortedStudents, addClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
+import { getState, subscribe, classById, sortedStudents, addClass, selectClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
 import { escapeHtml, timeLabel } from '../format.js';
 import { namesFromCsv } from '../csv.js';
 import { openModal, confirmDialog } from '../modal.js';
@@ -71,7 +71,7 @@ export function renderClasses(el) {
 }
 
 // Add a class, or edit one (with a Delete button) when `cls` is given.
-function classDialog(cls) {
+export function classDialog(cls) {
   openModal({
     title: cls ? 'Edit class' : 'Add class',
     className: 'modal-sm',
@@ -105,7 +105,7 @@ function classDialog(cls) {
         errorEl.hidden = !error;
         if (error) return;
         if (cls) updateClass(cls.id, { name, lateAfter });
-        else addClass(name, lateAfter);
+        else selectClass(addClass(name, lateAfter)); // a new class opens as the current period
         close();
       });
 
