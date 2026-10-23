@@ -1,22 +1,21 @@
 import { icon } from '../icons.js';
-import { getState, subscribe, classById, dayRows, setOverride, markRestPresent, startKiosk, STATUSES } from '../store.js';
+import { subscribe, classById, currentClass, dayRows, setOverride, markRestPresent, startKiosk, STATUSES } from '../store.js';
 import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../format.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog } from '../modal.js';
 
-let classId = null;
 let date = todayKey();
 
 const SEG = [['present', 'P'], ['late', 'L'], ['absent', 'A']];
 
 export function renderAttendance(el) {
-  const { classes } = getState();
-  if (!classById(classId)) classId = classes[0]?.id ?? null;
-
   el.innerHTML = `
     <div class="page">
       <header class="page-head">
-        <h1>Attendance</h1>
+        <div class="page-title">
+          <small>Attendance</small>
+          <h1 id="title">Attendance</h1>
+        </div>
         <span class="spacer"></span>
         <div class="date-step">
           <button class="action" data-step="-1" aria-label="Previous day">${icon('chevronLeft')}</button>
@@ -33,7 +32,9 @@ export function renderAttendance(el) {
   const dateEl = el.querySelector('#date');
 
   function render() {
-    const cls = classById(classId);
+    // The period comes from the sidebar.
+    const cls = currentClass();
+    el.querySelector('#title').textContent = cls?.name ?? 'Attendance';
     dateEl.value = date;
     el.querySelector('#export').disabled = !cls;
     el.querySelector('#kiosk').disabled = !cls;
@@ -44,13 +45,10 @@ export function renderAttendance(el) {
         </div></section>`;
       return;
     }
-    const rows = dayRows(classId, date);
+    const rows = dayRows(cls.id, date);
     const count = (s) => rows.filter((r) => r.status === s).length;
     const isToday = date === todayKey();
     bodyEl.innerHTML = `
-      <div class="tabs" role="tablist">
-        ${getState().classes.map((c) => `<button class="tab${c.id === classId ? ' active' : ''}" role="tab" aria-selected="${c.id === classId}" data-class="${c.id}">${escapeHtml(c.name)}</button>`).join('')}
-      </div>
       <div class="stats-row">
         ${['present', 'late', 'absent', 'notyet'].map((s) => `
           <div class="stat-card">
@@ -95,22 +93,19 @@ export function renderAttendance(el) {
     if (t.dataset.step) {
       date = addDays(date, Number(t.dataset.step));
       render();
-    } else if (t.dataset.class) {
-      classId = t.dataset.class;
-      render();
     } else if (t.dataset.student) {
-      setOverride(classId, date, t.dataset.student, t.dataset.status || null);
+      setOverride(currentClass().id, date, t.dataset.student, t.dataset.status || null);
     } else if (t.id === 'rest') {
       const ok = await confirmDialog({
         title: 'Mark the rest present?',
         message: 'Everyone still marked Absent or Not yet will be marked Present for this day.',
         confirmLabel: 'Mark present',
       });
-      if (ok) markRestPresent(classId, date);
+      if (ok) markRestPresent(currentClass().id, date);
     } else if (t.id === 'export') {
-      exportDay(classId, date);
+      exportDay(currentClass().id, date);
     } else if (t.id === 'kiosk') {
-      startKiosk(classId);
+      startKiosk(currentClass().id);
     }
   });
 

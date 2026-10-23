@@ -368,6 +368,9 @@ button:disabled { cursor: not-allowed; }
 .status-notyet { color: var(--muted); }
 
 /* ---------- Attendance ---------- */
+.page-title { display: flex; flex-direction: column; min-width: 0; }
+.page-title small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.page-title h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .date-step { display: flex; align-items: center; gap: 2px; }
 .date-step .action { padding: 0 8px; }
 .date-step input {
@@ -525,7 +528,7 @@ button:disabled { cursor: not-allowed; }
 @media (max-width: 760px) {
   .page-head { flex-wrap: wrap; }
   .page-head .spacer { display: none; }
-  .page-head h1 { flex-basis: 100%; }
+  .page-head h1, .page-title { flex-basis: 100%; }
   .page-head .btn-primary, .page-head .btn-secondary { padding: 0 12px; }
   .page-body .stats-row { grid-template-columns: repeat(2, 1fr); }
   .page-body .panel-head { flex-wrap: wrap; }
