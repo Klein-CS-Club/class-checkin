@@ -1,63 +1,93 @@
 import { icon } from '../icons.js';
-import { getState, subscribe, classById, sortedStudents, checkIn, undoCheckIn, isCheckedIn, stopKiosk } from '../store.js';
-import { matchesSearch, firstName } from '../names.js';
-import { escapeHtml } from '../format.js';
+import { getState, subscribe, classById, dayRows, checkIn, undoCheckIn, stopKiosk } from '../store.js';
+import { matchesSearch } from '../names.js';
+import { escapeHtml, todayKey, time12 } from '../format.js';
 import { openModal } from '../modal.js';
 
-const GREETING_MS = 3000;
+const UNDO_MS = 5000;
 
-// The unattended tablet screen at the door. Never shows times or late status.
+// A teacher's Present or Late in Attendance counts as checked in too.
+const isHere = (row) => row.status === 'present' || row.status === 'late';
+
+// The unattended Chromebook at the door. Shows check-in times, never late status.
 export function renderCheckin(el) {
   const cls = classById(getState().kiosk.classId);
   el.innerHTML = `
     <div class="kiosk">
-      <header class="kiosk-head">
-        <div>
-          <p class="kiosk-class">${escapeHtml(cls?.name ?? '')}</p>
-          <h1>Find your name</h1>
-        </div>
+      <header class="kiosk-bar">
+        <p class="kiosk-class">${escapeHtml(cls?.name ?? '')}</p>
+        <div class="kiosk-clock"><span id="clock"></span><span id="date"></span></div>
+        <p class="kiosk-count" id="count"></p>
         <button class="action" id="lock" aria-label="Teacher: exit check-in">${icon('lock')}Teacher</button>
       </header>
-      <div class="kiosk-search-wrap">
-        <label class="search kiosk-search">
-          ${icon('search')}
-          <input id="search" type="text" inputmode="search" enterkeyhint="go" placeholder="Start typing your name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Search your name">
-        </label>
+      <div class="kiosk-body">
+        <section class="kiosk-entry">
+          <label class="kiosk-label" for="search">Your name</label>
+          <label class="search kiosk-search">
+            ${icon('search')}
+            <input id="search" type="text" inputmode="search" enterkeyhint="go" placeholder="Start typing your name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          </label>
+          <button class="btn-primary btn-xl" id="go" disabled>Check in</button>
+          <p class="kiosk-help">Type your name, then press Enter.</p>
+          <p class="kiosk-help">Can’t find your name? Tell your teacher.</p>
+          <div class="kiosk-undo" id="undo" hidden></div>
+        </section>
+        <section class="kiosk-list" id="list" aria-label="Class list"></section>
       </div>
       <p class="sr-only" aria-live="polite" id="live"></p>
-      <div class="kiosk-list" id="list"></div>
-      <p class="kiosk-foot">Can’t find your name? Tell your teacher.</p>
-      <div class="greeting" id="greeting" hidden></div>
     </div>`;
 
   const searchEl = el.querySelector('#search');
+  const goEl = el.querySelector('#go');
   const listEl = el.querySelector('#list');
   const liveEl = el.querySelector('#live');
-  const greetingEl = el.querySelector('#greeting');
+  const undoEl = el.querySelector('#undo');
   let query = '';
   let highlight = -1;
-  let matches = [];
-  let greeting = null; // { result, query } while the greeting shows
-  let timer = null;
+  let open = [];   // matching students not yet checked in; the highlight moves through these
+  let undo = null; // { result, query } while the undo notice shows
+  let undoTimer = null;
+  let clockTimer = null;
 
-  function renderList() {
+  // The highlighted row, or the only one left. Several matches and no highlight: nobody.
+  const target = () => (query.trim() ? open[highlight] ?? (open.length === 1 ? open[0] : null) : null);
+
+  function renderClock() {
+    const now = new Date();
+    el.querySelector('#clock').textContent = time12(now);
+    el.querySelector('#date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    // Wake again at the top of the next minute.
+    clockTimer = setTimeout(() => { renderClock(); render(); }, 60000 - (now % 60000));
+  }
+
+  const row = ({ student }, i) => `
+    <div class="kiosk-row${i === highlight ? ' highlight' : ''}">
+      <span class="kiosk-name">${escapeHtml(student.name)}</span>
+      <button class="btn-primary" data-id="${student.id}">Check in</button>
+    </div>`;
+  const doneRow = ({ student, checkIn: entry }) => `
+    <div class="kiosk-row done">
+      <span class="kiosk-name">${escapeHtml(student.name)}</span>
+      <span class="kiosk-done">${icon('check')}Checked in${entry ? ` · ${time12(entry.at)}` : ''}</span>
+    </div>`;
+
+  function render() {
     if (!cls) {
       listEl.innerHTML = '<p class="kiosk-empty">This class no longer exists. Ask your teacher.</p>';
+      searchEl.disabled = true;
       return;
     }
-    matches = sortedStudents(cls).filter((s) => matchesSearch(s.name, query));
+    const rows = dayRows(cls.id, todayKey());
+    el.querySelector('#count').textContent = `${rows.filter(isHere).length} of ${rows.length} checked in`;
+
+    const matches = rows.filter((r) => matchesSearch(r.student.name, query));
+    const done = matches.filter(isHere);
+    open = matches.filter((r) => !isHere(r));
+    highlight = Math.min(highlight, open.length - 1);
+    goEl.disabled = !target();
     liveEl.textContent = matches.length ? `${matches.length} names` : 'No matching names';
     listEl.innerHTML = matches.length
-      ? matches.map((s, i) => {
-          const done = isCheckedIn(cls.id, s.id);
-          return `
-            <div class="kiosk-row${i === highlight ? ' highlight' : ''}">
-              <span class="kiosk-name">${escapeHtml(s.name)}</span>
-              ${done
-                ? `<span class="tag-done">${icon('check')}Checked in</span>`
-                : `<button class="btn-primary" data-id="${s.id}">Check in</button>`}
-            </div>`;
-        }).join('')
+      ? open.map(row).join('') + done.map(doneRow).join('')
       : `<p class="kiosk-empty">No names match “${escapeHtml(query)}”.</p>`;
     listEl.querySelector('.highlight')?.scrollIntoView({ block: 'nearest' });
   }
@@ -67,58 +97,57 @@ export function renderCheckin(el) {
     searchEl.value = value;
     highlight = -1;
     listEl.scrollTop = 0;
-    renderList();
+    render();
   }
 
-  function showGreeting(student, result) {
-    greeting = { result, query };
-    const again = result.kind === 'already';
-    greetingEl.innerHTML = `
-      <div class="greeting-check">${icon('check')}</div>
-      <h2>Welcome, ${escapeHtml(firstName(student.name))}!</h2>
-      <p>${again ? 'You’re already checked in.' : 'You’re checked in.'}</p>
+  function showUndo(student, result) {
+    clearTimeout(undoTimer);
+    undo = { result, query };
+    undoEl.innerHTML = `${icon('check')}<span>Checked in <strong>${escapeHtml(student.name)}</strong></span>
       <button class="btn-link" id="not-you">Not you?</button>`;
-    greetingEl.hidden = false;
-    timer = setTimeout(resetForNextPerson, GREETING_MS);
+    undoEl.hidden = false;
+    undoTimer = setTimeout(hideUndo, UNDO_MS);
   }
 
-  function hideGreeting() {
-    clearTimeout(timer);
-    greeting = null;
-    greetingEl.hidden = true;
-    greetingEl.innerHTML = '';
+  function hideUndo() {
+    clearTimeout(undoTimer);
+    undo = null;
+    undoEl.hidden = true;
   }
 
-  function resetForNextPerson() {
-    hideGreeting();
-    setQuery('');
-    searchEl.focus();
-  }
-
-  // "Not you?" undoes only the check-in this greeting just made, then goes back to the
-  // same search so the right person can tap their own row.
+  // "Not you?" undoes only the check-in just made, then puts the search back the way it was.
   function notYou() {
-    const { result, query: previous } = greeting;
-    hideGreeting();
+    const { result, query: previous } = undo;
+    hideUndo();
     if (result.kind === 'recorded') undoCheckIn(result.checkIn.id);
     setQuery(previous);
     searchEl.focus();
   }
 
-  // Only the button checks someone in, so scrolling can't cause an accidental check-in.
-  function doCheckIn(student) {
-    if (greeting || isCheckedIn(cls.id, student.id)) return;
-    showGreeting(student, checkIn(cls.id, student.id));
+  // Only buttons check someone in, so scrolling can't cause an accidental check-in.
+  function doCheckIn({ student }) {
+    const result = checkIn(cls.id, student.id);
+    showUndo(student, result);
+    setQuery('');
+    liveEl.textContent = `Checked in ${student.name}`;
+    searchEl.focus();
   }
+
+  goEl.addEventListener('click', () => { const t = target(); if (t) doCheckIn(t); });
 
   listEl.addEventListener('click', (e) => {
     const id = e.target.closest('[data-id]')?.dataset.id;
-    const student = id && cls.students.find((s) => s.id === id);
-    if (student) doCheckIn(student);
+    const r = id && open.find((o) => o.student.id === id);
+    if (r) doCheckIn(r);
   });
 
-  greetingEl.addEventListener('click', (e) => {
+  undoEl.addEventListener('click', (e) => {
     if (e.target.closest('#not-you')) notYou();
+  });
+
+  // A click on empty space sends focus back to the name box.
+  el.addEventListener('click', (e) => {
+    if (!e.target.closest('button, input')) searchEl.focus();
   });
 
   searchEl.addEventListener('input', () => setQuery(searchEl.value));
@@ -126,29 +155,30 @@ export function renderCheckin(el) {
     if (e.isComposing) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      if (!matches.length) return;
-      highlight = e.key === 'ArrowDown' ? Math.min(highlight + 1, matches.length - 1) : Math.max(highlight - 1, 0);
-      renderList();
+      if (!query.trim() || !open.length) return;
+      highlight = e.key === 'ArrowDown' ? Math.min(highlight + 1, open.length - 1) : Math.max(highlight - 1, 0);
+      render();
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const target = matches[highlight] ?? (matches.length === 1 ? matches[0] : null);
-      if (target) doCheckIn(target);
+      const t = target();
+      if (t) doCheckIn(t);
     } else if (e.key === 'Escape') {
       setQuery('');
     }
   });
 
   el.querySelector('#lock').addEventListener('click', () => {
-    clearTimeout(timer);
-    showPinPad(() => { if (greeting) resetForNextPerson(); });
+    showPinPad(() => searchEl.focus());
   });
 
-  const unsubscribe = subscribe(() => { if (getState().kiosk) renderList(); });
-  renderList();
+  const unsubscribe = subscribe(() => { if (getState().kiosk) render(); });
+  renderClock();
+  render();
   searchEl.focus();
 
   return () => {
-    clearTimeout(timer);
+    clearTimeout(undoTimer);
+    clearTimeout(clockTimer);
     unsubscribe();
   };
 }

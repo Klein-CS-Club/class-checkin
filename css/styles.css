@@ -411,27 +411,49 @@ button:disabled { cursor: not-allowed; }
 /* ---------- Kiosk (check-in screen) ---------- */
 .kiosk-mode .sidebar { display: none; }
 .kiosk {
-  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
-.kiosk-head, .kiosk-search-wrap, .kiosk-list > *, .kiosk-foot { width: min(720px, 100%); margin-inline: auto; }
-.kiosk-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 28px 20px 16px;
+/* Dark bar across the top, laid out like the library's student kiosk. */
+.kiosk-bar {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 24px;
+  background: var(--primary);
+  color: #fff;
 }
-.kiosk-head h1 { margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -.01em; }
-.kiosk-class { margin: 0 0 4px; color: var(--muted); font-size: 15px; font-weight: 500; }
-.kiosk-head .action { color: var(--muted); }
-.kiosk-search-wrap { padding: 0 20px 16px; }
+.kiosk-class { margin: 0; font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.kiosk-clock { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+#clock { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+#date, .kiosk-count { font-size: 15px; color: rgb(255 255 255 / .8); }
+.kiosk-count { margin: 0; justify-self: end; font-weight: 500; font-variant-numeric: tabular-nums; }
+.kiosk-bar .action { color: #fff; border-color: rgb(255 255 255 / .3); }
+.kiosk-bar .action:hover { background: rgb(255 255 255 / .1); }
+
+.kiosk-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 30%) 1fr;
+}
+.kiosk-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.kiosk-label { font-size: 15px; font-weight: 600; color: var(--text-2); }
 .kiosk-search {
+  flex: none;
   height: 64px;
-  padding: 0 20px;
+  padding: 0 18px;
   gap: 12px;
   border: 2px solid var(--border-strong);
   border-radius: var(--radius-lg);
@@ -439,84 +461,79 @@ button:disabled { cursor: not-allowed; }
 .kiosk-search .icon { width: 22px; height: 22px; }
 .kiosk-search input { font-size: 22px; }
 .kiosk-search:focus-within { border-color: var(--info); box-shadow: 0 0 0 4px var(--info-soft); }
-/* Only the list scrolls, so the search box stays put with the on-screen keyboard up. */
+.kiosk-entry .btn-xl { height: 60px; font-size: 20px; }
+.kiosk-help { margin: 0; color: var(--muted); font-size: 16px; }
+.kiosk-undo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--success-soft);
+  color: var(--present);
+  font-size: 16px;
+  animation: fade-in var(--med) var(--ease);
+}
+.kiosk-undo[hidden] { display: none; }
+.kiosk-undo > .icon { width: 18px; height: 18px; flex: none; }
+.kiosk-undo span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.kiosk-undo .btn-link { font-size: 15px; color: var(--text); text-decoration: underline; }
+
+/* Only the list scrolls. */
 .kiosk-list {
-  flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 12px 20px 20px;
-  border-top: 1px solid var(--border);
+  padding: 16px 24px;
 }
 .kiosk-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 72px;
-  margin-bottom: 8px;
-  padding: 10px 12px 10px 20px;
+  min-height: 60px;
+  margin-bottom: 6px;
+  padding: 8px 10px 8px 20px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
 }
 .kiosk-row.highlight { border-color: var(--info); box-shadow: 0 0 0 3px var(--info-soft); }
-.kiosk-name { flex: 1; min-width: 0; font-size: 20px; font-weight: 500; overflow-wrap: anywhere; }
-.kiosk-row .btn-primary { height: 52px; padding: 0 24px; font-size: 17px; flex: none; }
-.tag-done {
+.kiosk-name { flex: 1; min-width: 0; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
+.kiosk-row .btn-primary { height: 44px; padding: 0 22px; font-size: 16px; flex: none; }
+/* Checked in: dimmed, but --muted on white still passes 4.5:1. */
+.kiosk-row.done { border-color: transparent; }
+.kiosk-row.done .kiosk-name { color: var(--muted); font-weight: 400; }
+.kiosk-done {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 14px;
-  height: 36px;
-  border-radius: 999px;
-  background: var(--success-soft);
-  color: var(--present);
-  font-size: 14px;
-  font-weight: 600;
-  flex: none;
-}
-.tag-done .icon { width: 15px; height: 15px; }
-.kiosk-empty { padding: 40px 0; color: var(--muted); font-size: 18px; text-align: center; }
-.kiosk-foot {
-  flex: none;
-  margin-block: 0;
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
+  min-height: 44px;
+  padding-right: 10px;
   color: var(--muted);
-  font-size: 17px;
-  text-align: center;
-  width: 100%;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  flex: none;
 }
+.kiosk-done .icon { width: 16px; height: 16px; color: var(--present); }
+.kiosk-empty { padding: 40px 0; color: var(--muted); font-size: 18px; text-align: center; }
 
-.greeting {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px;
-  background: var(--bg);
-  text-align: center;
-  animation: fade-in var(--med) var(--ease);
+/* Narrow screens: entry on top, roster below, and the whole page scrolls. */
+@media (max-width: 820px) {
+  .kiosk { overflow-y: auto; }
+  .kiosk-bar { grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 16px; }
+  .kiosk-bar .action { grid-area: 1 / 2; }
+  .kiosk-clock { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 10px; white-space: nowrap; }
+  #clock { font-size: 24px; }
+  .kiosk-count { grid-column: 1 / -1; justify-self: start; }
+  .kiosk-class { font-size: 17px; }
+  .kiosk-body { flex: none; display: block; }
+  .kiosk-entry { padding: 16px; border-right: 0; border-bottom: 1px solid var(--border); }
+  .kiosk-list { overflow: visible; padding: 12px 16px; }
+  .kiosk-name { font-size: 17px; }
+  .kiosk-row { flex-wrap: wrap; gap: 4px 12px; }
 }
-.greeting[hidden] { display: none; }
-.greeting-check {
-  width: 112px; height: 112px;
-  display: grid; place-items: center;
-  margin-bottom: 12px;
-  border-radius: 32px;
-  background: var(--success-soft);
-  color: var(--success);
-  animation: pop-in 320ms var(--ease);
-}
-.greeting-check .icon { width: 56px; height: 56px; stroke-width: 2.4; }
-.greeting h2 { margin: 0; font-size: 44px; font-weight: 700; letter-spacing: -.01em; }
-.greeting p { margin: 0; color: var(--muted); font-size: 20px; }
-.greeting .btn-link { margin-top: 28px; padding: 10px 16px; font-size: 17px; color: var(--muted); }
 
 .pin-modal .modal-text { margin-bottom: 16px; }
 .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 8px; }
@@ -536,10 +553,6 @@ button:disabled { cursor: not-allowed; }
   .page-head .btn-primary, .page-head .btn-secondary { padding: 0 12px; }
   .page-body .stats-row { grid-template-columns: repeat(2, 1fr); }
   .page-body .panel-head { flex-wrap: wrap; }
-  .kiosk-head { padding-top: 20px; }
-  .kiosk-head h1 { font-size: 28px; }
-  .kiosk-name { font-size: 18px; }
-  .greeting h2 { font-size: 34px; }
   .status-cell { gap: 6px; }
 }
 
