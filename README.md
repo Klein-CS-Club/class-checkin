@@ -39,10 +39,15 @@ The first run loads three demo classes with made-up names and a week of history.
   it back to automatic. **Mark rest present** fills in everyone still absent.
 - **Export CSV** downloads the day you're looking at: Date, Class, Student, Status, Check-in time.
 - **Start check-in** locks the tablet into the kiosk for that class and hides the sidebar.
-- **Kiosk** (`#/checkin`): students type part of their name (accents optional, any word order) and tap
-  **Check in**. Tapping a name does nothing, so scrolling can't check someone in by accident. A greeting
-  shows for 3 seconds, then the screen resets for the next student. **Not you?** undoes that check-in.
-  A second check-in on the same day saves nothing. The kiosk never shows times or late status.
+- **Kiosk** (`#/checkin`): built for a Chromebook at the door. A dark bar shows the class, a live clock
+  and date, and how many are checked in. Students type part of their name (accents optional, any word
+  order) in the box on the left, and the class list on the right filters as they type. **Enter** or the
+  big **Check in** button checks in the highlighted name (↑/↓) or the only one left; with several matches
+  it does nothing. Each row also has its own **Check in** button. Tapping a name does nothing, so
+  scrolling can't check someone in by accident. Checked-in names drop below the rest, dimmed, with their
+  check-in time. A teacher's Present or Late counts as checked in. **Not you?** shows for 5 seconds after
+  each check-in and undoes it. A second check-in on the same day saves nothing. The kiosk shows check-in
+  times but never late status.
 - **Teacher** (top right of the kiosk) asks for the PIN to leave. The default PIN is **1234**, and you can
   change it in Settings. It only stops casual tapping. It isn't real security.
 
