@@ -50,11 +50,12 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm', danger
       title,
       className: 'modal-sm',
       render(body, close) {
+        // A dangerous action starts on Cancel, so a stray Enter can't erase anything.
         body.innerHTML = `
           <p class="modal-text">${escapeHtml(message)}</p>
           <div class="modal-actions">
-            <button class="btn-secondary" data-a="no">Cancel</button>
-            <button class="${danger ? 'btn-danger' : 'btn-primary'}" data-a="yes" autofocus>${escapeHtml(confirmLabel)}</button>
+            <button class="btn-secondary" data-a="no" ${danger ? 'autofocus' : ''}>Cancel</button>
+            <button class="${danger ? 'btn-danger' : 'btn-primary'}" data-a="yes" ${danger ? '' : 'autofocus'}>${escapeHtml(confirmLabel)}</button>
           </div>`;
         body.addEventListener('click', (e) => {
           const a = e.target.closest('[data-a]')?.dataset.a;
