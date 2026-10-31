@@ -30,7 +30,6 @@ export function renderAttendance(el) {
 
   const bodyEl = el.querySelector('#body');
   const dateEl = el.querySelector('#date');
-  let popId = null; // the student whose Edited chip should pop in on the next render
 
   function render() {
     // The period comes from the sidebar.
@@ -74,7 +73,7 @@ export function renderAttendance(el) {
                   <td class="tabular muted">${r.checkIn ? escapeHtml(time12(r.checkIn.at)) : '—'}</td>
                   <td class="status-col">
                     <div class="status-cell">
-                      ${r.overridden ? `<button class="edited-chip${r.student.id === popId ? ' pop' : ''}" data-student="${r.student.id}" data-status="" aria-label="Undo edit for ${escapeHtml(r.student.name)}" title="Go back to the automatic status">Edited · Undo${icon('close')}</button>` : ''}
+                      ${r.overridden ? `<button class="edited-undo" data-student="${r.student.id}" data-status="" aria-label="Undo edit for ${escapeHtml(r.student.name)}" title="Go back to the automatic status">Edited · Undo${icon('close')}</button>` : ''}
                       <div class="seg" role="group" aria-label="Status for ${escapeHtml(r.student.name)}">
                         ${SEG.map(([s, short]) => `<button class="seg-${s}" data-student="${r.student.id}" data-status="${s}" aria-pressed="${r.status === s}" title="${STATUSES[s]}">${short}</button>`).join('')}
                       </div>
@@ -86,7 +85,6 @@ export function renderAttendance(el) {
           </table>`
         : '<div class="panel-empty">No students in this class yet. <a href="#/classes">Add students</a>.</div>'}
       </section>`;
-    popId = null;
   }
 
   el.querySelector('.page').addEventListener('click', async (e) => {
@@ -96,8 +94,6 @@ export function renderAttendance(el) {
       date = addDays(date, Number(t.dataset.step));
       render();
     } else if (t.dataset.student) {
-      // Only the chip that just appeared pops in; the rest stay still on re-render.
-      popId = t.dataset.status ? t.dataset.student : null;
       setOverride(currentClass().id, date, t.dataset.student, t.dataset.status || null);
     } else if (t.id === 'rest') {
       const ok = await confirmDialog({

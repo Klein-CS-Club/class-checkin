@@ -390,26 +390,19 @@ button:disabled { cursor: not-allowed; }
 .table .status-col { text-align: right; }
 .status-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .status-text { min-width: 56px; font-size: 13px; font-weight: 600; text-align: left; }
-/* Shows on an overridden row, left of the P / L / A; the whole chip undoes the edit. */
-.edited-chip {
+/* Shows on an overridden row, left of the P / L / A; clicking it undoes the edit. */
+.edited-undo {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 6px 0 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--text-2);
+  gap: 4px;
+  color: var(--muted);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition: color var(--fast) var(--ease);
 }
-.edited-chip:hover { background: var(--surface-2); color: var(--text); }
-.edited-chip .icon { width: 14px; height: 14px; }
-.edited-chip.pop { animation: chip-pop 180ms var(--ease); }
-@keyframes chip-pop { from { opacity: 0; transform: translateX(8px) scale(.94); } }
+.edited-undo:hover { color: var(--text); }
+.edited-undo .icon { width: 14px; height: 14px; }
 .seg { display: inline-flex; padding: 2px; border-radius: 10px; background: var(--surface-2); }
 .seg button {
   width: 36px; height: 32px;
@@ -743,9 +736,9 @@ button.list-row:hover { background: var(--surface-2); }
   .table tr { display: grid; grid-template-columns: 1fr auto; padding: 8px 0; border-bottom: 1px solid var(--border); }
   .table td { border: 0; padding: 4px 16px; }
   .table td.status-col { grid-column: 1 / -1; }
-  /* When the row is too narrow, the chip wraps onto its own line above the buttons. */
+  /* When the row is too narrow, Edited · Undo wraps onto its own line above the buttons. */
   .status-cell { flex-wrap: wrap-reverse; }
-  .edited-chip { order: 1; }
+  .edited-undo { order: 1; }
 }
 /* ---------- Settings ---------- */
 .settings { align-items: stretch; }
