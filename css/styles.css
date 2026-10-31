@@ -406,6 +406,41 @@ button:disabled { cursor: not-allowed; }
 
 /* Keeps its full height so the page scrolls, instead of the column squeezing and clipping it. */
 .att-panel { flex: none; }
+.att-panel .panel-head .stat-sub { color: var(--muted); font-size: 13px; }
+/* No table chrome: a big name, a colored status, then the override. */
+.att-heading { margin: 0; padding: 14px 20px 2px; font-size: 15px; font-weight: 700; color: var(--text); }
+.att-list { padding: 0 8px 8px; }
+.att-row {
+  display: grid;
+  grid-template-columns: minmax(0, 16em) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 16px;
+  min-height: 48px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.att-row:last-child { border-bottom: 0; }
+.att-name { font-size: 18px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.att-status { font-size: 15px; font-weight: 700; white-space: nowrap; }
+.att-time { color: var(--text-2); font-weight: 500; font-variant-numeric: tabular-nums; }
+.att-row .status-cell { justify-content: flex-end; }
+.att-calm { margin: 0; padding: 12px 20px 20px; color: var(--present); font-size: 17px; font-weight: 600; }
+.att-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+.att-toggle:hover { background: var(--surface-2); }
+.att-toggle .icon { width: 16px; height: 16px; transition: transform var(--fast) var(--ease); }
+.att-toggle[aria-expanded="true"] .icon { transform: rotate(90deg); }
+#present-list .att-name { font-size: 16px; font-weight: 500; }
 
 /* ---------- Classes ---------- */
 .roster { max-height: 380px; overflow-y: auto; }
@@ -581,6 +616,9 @@ button:disabled { cursor: not-allowed; }
   .page-body .stats-row { grid-template-columns: repeat(2, 1fr); }
   .page-body .panel-head { flex-wrap: wrap; }
   .status-cell { gap: 6px; }
+  .att-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .att-status { justify-self: end; }
+  .att-row .status-cell { grid-column: 1 / -1; justify-content: flex-start; }
 }
 
 /* ---------- Motion ---------- */

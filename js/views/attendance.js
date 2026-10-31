@@ -8,6 +8,24 @@ let date = todayKey();
 
 const SEG = [['present', 'P'], ['late', 'L'], ['absent', 'A']];
 
+// Whether the Present list is open. A per-device preference, so it lives outside the store.
+const OPEN_KEY = 'class-checkin-present-open';
+let presentOpen = false;
+try { presentOpen = localStorage.getItem(OPEN_KEY) === '1'; } catch { /* ignore */ }
+
+// One student: name, status (with the check-in time when there is one), and the P / L / A override.
+const row = (r) => `
+  <div class="att-row">
+    <span class="att-name">${escapeHtml(r.student.name)}</span>
+    <span class="att-status status-${r.status}">${STATUSES[r.status]}${r.checkIn && r.status !== 'absent' ? ` <span class="att-time">· ${escapeHtml(time12(r.checkIn.at))}</span>` : ''}</span>
+    <div class="status-cell">
+      ${r.overridden ? `<button class="btn-link auto" data-student="${r.student.id}" data-status="" title="Go back to the automatic status">Edited · Undo</button>` : ''}
+      <div class="seg" role="group" aria-label="Status for ${escapeHtml(r.student.name)}">
+        ${SEG.map(([s, short]) => `<button class="seg-${s}" data-student="${r.student.id}" data-status="${s}" aria-pressed="${r.status === s}" title="${STATUSES[s]}">${short}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
 export function renderAttendance(el) {
   el.innerHTML = `
     <div class="page">
@@ -48,6 +66,9 @@ export function renderAttendance(el) {
     const rows = dayRows(cls.id, date);
     const count = (s) => rows.filter((r) => r.status === s).length;
     const isToday = date === todayKey();
+    // Skyward assumes everyone is present, so the exceptions come first. dayRows is already in last-name order.
+    const toMark = ['absent', 'late', 'notyet'].flatMap((s) => rows.filter((r) => r.status === s));
+    const present = rows.filter((r) => r.status === 'present');
     bodyEl.innerHTML = `
       <div class="stats-row">
         ${['present', 'late', 'absent', 'notyet'].map((s) => `
@@ -64,25 +85,15 @@ export function renderAttendance(el) {
           <button class="btn-link" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
         </div>
         ${rows.length ? `
-          <table class="table">
-            <thead><tr><th>Student</th><th>Checked in</th><th>Status</th></tr></thead>
-            <tbody>
-              ${rows.map((r) => `
-                <tr>
-                  <td class="student-name">${escapeHtml(r.student.name)}</td>
-                  <td class="tabular muted">${r.checkIn ? escapeHtml(time12(r.checkIn.at)) : '—'}</td>
-                  <td>
-                    <div class="status-cell">
-                      <div class="seg" role="group" aria-label="Status for ${escapeHtml(r.student.name)}">
-                        ${SEG.map(([s, short]) => `<button class="seg-${s}" data-student="${r.student.id}" data-status="${s}" aria-pressed="${r.status === s}" title="${STATUSES[s]}">${short}</button>`).join('')}
-                      </div>
-                      <span class="status-text status-${r.status}">${STATUSES[r.status]}</span>
-                      ${r.overridden ? `<button class="btn-link auto" data-student="${r.student.id}" data-status="" title="Go back to the automatic status">Edited · Undo</button>` : ''}
-                    </div>
-                  </td>
-                </tr>`).join('')}
-            </tbody>
-          </table>`
+          <h3 class="att-heading">Mark in Skyward</h3>
+          ${toMark.length
+            ? `<div class="att-list">${toMark.map(row).join('')}</div>`
+            : '<p class="att-calm">Everyone’s here. Nothing to mark.</p>'}
+          ${present.length ? `
+            <button class="att-toggle" id="present-toggle" aria-expanded="${presentOpen}" aria-controls="present-list">
+              ${icon('chevronRight')}Present (${present.length})
+            </button>
+            <div class="att-list" id="present-list" ${presentOpen ? '' : 'hidden'}>${present.map(row).join('')}</div>` : ''}`
         : '<div class="panel-empty">No students in this class yet. <a href="#/classes">Add students</a>.</div>'}
       </section>`;
   }
@@ -95,6 +106,11 @@ export function renderAttendance(el) {
       render();
     } else if (t.dataset.student) {
       setOverride(currentClass().id, date, t.dataset.student, t.dataset.status || null);
+    } else if (t.id === 'present-toggle') {
+      presentOpen = !presentOpen;
+      try { localStorage.setItem(OPEN_KEY, presentOpen ? '1' : '0'); } catch { /* ignore */ }
+      render();
+      el.querySelector('#present-toggle').focus();
     } else if (t.id === 'rest') {
       const ok = await confirmDialog({
         title: 'Mark the rest present?',
