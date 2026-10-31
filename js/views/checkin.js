@@ -27,7 +27,7 @@ export function renderCheckin(el) {
           </label>
           <button class="btn-primary btn-xl" id="go" disabled>Check in</button>
           <div class="kiosk-undo" id="undo" hidden></div>
-          <p class="kiosk-help">Type your name, then press Enter.</p>
+          <p class="kiosk-help" id="hint">Type your name, then press Enter.</p>
           <p class="kiosk-help">Can’t find your name? Tell your teacher.</p>
         </section>
         <section class="kiosk-list" id="list" aria-label="Class list"></section>
@@ -40,6 +40,7 @@ export function renderCheckin(el) {
   const listEl = el.querySelector('#list');
   const liveEl = el.querySelector('#live');
   const undoEl = el.querySelector('#undo');
+  const hintEl = el.querySelector('#hint');
   let query = '';
   let highlight = -1;
   let open = [];   // matching students not yet checked in; the highlight moves through these
@@ -82,7 +83,14 @@ export function renderCheckin(el) {
     open = matches.filter((r) => !isHere(r));
     highlight = Math.min(highlight, open.length - 1);
     goEl.disabled = !target();
-    liveEl.textContent = matches.length ? `${matches.length} names` : 'No matching names';
+    // Several names and none picked: Enter does nothing, so say what to do instead.
+    const several = query.trim() && open.length > 1 && !open[highlight];
+    hintEl.textContent = several
+      ? `${open.length} names match. Keep typing, or press ↓ to choose yours.`
+      : target() ? `Press Enter to check in ${target().student.name}.` : 'Type your name, then press Enter.';
+    liveEl.textContent = several
+      ? `${open.length} names match. Keep typing, or press the down arrow to choose yours.`
+      : matches.length ? `${matches.length} names` : 'No matching names';
     listEl.innerHTML = matches.length
       ? open.map(row).join('') + done.map(doneRow).join('')
       : `<p class="kiosk-empty">No names match “${escapeHtml(query)}”.</p>`;
