@@ -748,6 +748,6 @@ button.list-row:hover { background: var(--surface-2); }
 .saved-note[hidden] { display: none; }
 .saved-note .icon { width: 14px; height: 14px; }
 .danger-zone .list-row { padding: 14px 16px; }
-.danger-zone .list-text { gap: 2px; }
+.danger-zone .list-text { display: flex; flex-direction: column; gap: 2px; }
 .danger-zone .list-title { white-space: normal; }
 .danger-zone .btn-secondary, .danger-zone .btn-danger { height: 38px; padding: 0 16px; font-size: 14px; flex: none; }
