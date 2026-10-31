@@ -429,8 +429,8 @@ button:disabled { cursor: not-allowed; }
 }
 .kiosk-class { margin: 0; font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
 .kiosk-clock { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
-#clock { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-#date, .kiosk-count { font-size: 15px; color: rgb(255 255 255 / .8); }
+.kiosk-clock #clock { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.kiosk-clock #date, .kiosk-count { font-size: 15px; color: rgb(255 255 255 / .8); }
 .kiosk-count { margin: 0; justify-self: end; font-weight: 500; font-variant-numeric: tabular-nums; }
 .kiosk-bar .action { color: #fff; border-color: rgb(255 255 255 / .3); }
 .kiosk-bar .action:hover { background: rgb(255 255 255 / .1); }
@@ -549,7 +549,7 @@ button:disabled { cursor: not-allowed; }
   .kiosk-bar { grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 16px; }
   .kiosk-bar .action { grid-area: 1 / 2; }
   .kiosk-clock { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 10px; white-space: nowrap; }
-  #clock { font-size: 24px; }
+  .kiosk-clock #clock { font-size: 24px; }
   .kiosk-count { grid-column: 1 / -1; justify-self: start; }
   .kiosk-class { font-size: 17px; }
   .kiosk-body { flex: none; display: block; }
