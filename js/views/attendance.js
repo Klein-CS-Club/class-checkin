@@ -44,10 +44,22 @@ export function renderAttendance(el) {
         <button class="btn-primary" id="kiosk">${icon('play')}Start check-in</button>
       </header>
       <div class="page-body" id="body"></div>
+      <p class="sr-only" aria-live="polite" id="live"></p>
     </div>`;
 
   const bodyEl = el.querySelector('#body');
   const dateEl = el.querySelector('#date');
+  const liveEl = el.querySelector('#live');
+  // Students edited on this visit keep the place they started in, so a row doesn't jump out
+  // from under the pointer. Maps student id to that starting status; cleared when the day changes.
+  let pinned = new Map();
+  let refocus = null; // { student, status } of the button to focus after the next render
+
+  function setDate(value) {
+    date = value;
+    pinned = new Map();
+    render();
+  }
 
   function render() {
     // The period comes from the sidebar.
@@ -67,8 +79,9 @@ export function renderAttendance(el) {
     const count = (s) => rows.filter((r) => r.status === s).length;
     const isToday = date === todayKey();
     // Skyward assumes everyone is present, so the exceptions come first. dayRows is already in last-name order.
-    const toMark = ['absent', 'late', 'notyet'].flatMap((s) => rows.filter((r) => r.status === s));
-    const present = rows.filter((r) => r.status === 'present');
+    const place = (r) => pinned.get(r.student.id) ?? r.status;
+    const toMark = ['absent', 'late', 'notyet'].flatMap((s) => rows.filter((r) => place(r) === s));
+    const present = rows.filter((r) => place(r) === 'present');
     bodyEl.innerHTML = `
       <div class="stats-row">
         ${['present', 'late', 'absent', 'notyet'].map((s) => `
@@ -96,16 +109,33 @@ export function renderAttendance(el) {
             <div class="att-list" id="present-list" ${presentOpen ? '' : 'hidden'}>${present.map(row).join('')}</div>` : ''}`
         : '<div class="panel-empty">No students in this class yet. <a href="#/classes">Add students</a>.</div>'}
       </section>`;
+    if (refocus) {
+      const { student, status } = refocus;
+      refocus = null;
+      (bodyEl.querySelector(`[data-student="${student}"][data-status="${status}"]`)
+        ?? bodyEl.querySelector(`[data-student="${student}"][aria-pressed="true"]`))?.focus();
+    }
+  }
+
+  function override(studentId, status) {
+    const cls = currentClass();
+    const before = dayRows(cls.id, date).find((r) => r.student.id === studentId);
+    if (!pinned.has(studentId)) pinned.set(studentId, before.status);
+    refocus = { student: studentId, status };
+    setOverride(cls.id, date, studentId, status || null);
+    const after = dayRows(cls.id, date).find((r) => r.student.id === studentId);
+    liveEl.textContent = status
+      ? `${after.student.name} marked ${STATUSES[after.status]}`
+      : `${after.student.name} back to ${STATUSES[after.status]}`;
   }
 
   el.querySelector('.page').addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if (!t) return;
     if (t.dataset.step) {
-      date = addDays(date, Number(t.dataset.step));
-      render();
+      setDate(addDays(date, Number(t.dataset.step)));
     } else if (t.dataset.student) {
-      setOverride(currentClass().id, date, t.dataset.student, t.dataset.status || null);
+      override(t.dataset.student, t.dataset.status);
     } else if (t.id === 'present-toggle') {
       presentOpen = !presentOpen;
       try { localStorage.setItem(OPEN_KEY, presentOpen ? '1' : '0'); } catch { /* ignore */ }
@@ -126,7 +156,7 @@ export function renderAttendance(el) {
   });
 
   dateEl.addEventListener('change', () => {
-    if (dateEl.value) { date = dateEl.value; render(); }
+    if (dateEl.value) setDate(dateEl.value);
   });
 
   render();
