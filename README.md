@@ -47,7 +47,7 @@ The first run loads three demo classes with made-up names and a week of history.
   scrolling can't check someone in by accident. Checked-in names drop below the rest, dimmed, with their
   check-in time. A teacher's Present or Late counts as checked in. After each check-in a notice shows the
   name with **Not you?** (undoes it) and **✕** (closes it). A bar under it counts down 8 seconds, then it
-  closes on its own; holding the pointer over it pauses the countdown. A second check-in on the same day saves nothing. The kiosk shows check-in
+  closes on its own. A second check-in on the same day saves nothing. The kiosk shows check-in
   times but never late status.
 - **Teacher** (top right of the kiosk) asks for the PIN to leave. The default PIN is **1234**, and you can
   change it in Settings. It only stops casual tapping. It isn't real security.

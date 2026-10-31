@@ -97,7 +97,7 @@ export function renderCheckin(el) {
     render();
   }
 
-  // The bar under the notice counts down (8s, paused while hovered) and closes it when it runs out.
+  // The bar under the notice counts down 8s and closes it when it runs out.
   // New markup restarts the countdown when the next check-in replaces the notice.
   function showUndo(student, result) {
     undo = { result, query };
