@@ -373,11 +373,10 @@ button:disabled { cursor: not-allowed; }
 
 /* ---------- Attendance ---------- */
 .page-title { display: flex; flex-direction: column; min-width: 0; }
-.page-title small { color: var(--muted); font-size: 13px; font-weight: 500; }
+.page-title small { color: var(--muted); font-size: 12px; font-weight: 500; }
 .page-title h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .date-step { display: flex; align-items: center; gap: 2px; }
 .date-step .action { padding: 0 8px; }
-.date-step #today { margin-right: 6px; }
 .date-step input {
   height: 40px;
   padding: 0 10px;
@@ -407,43 +406,6 @@ button:disabled { cursor: not-allowed; }
 
 /* Keeps its full height so the page scrolls, instead of the column squeezing and clipping it. */
 .att-panel { flex: none; }
-.att-day { min-width: 0; }
-.att-tally { display: flex; flex-wrap: wrap; gap: 2px 16px; margin: 4px 0 0; color: var(--muted); font-size: 14px; }
-.att-tally b { font-weight: 700; font-variant-numeric: tabular-nums; }
-/* No table chrome: a big name, a colored status, then the override. */
-.att-heading { margin: 0; padding: 14px 20px 2px; font-size: 15px; font-weight: 700; color: var(--text); }
-.att-list { padding: 0 8px 8px; }
-.att-row {
-  display: grid;
-  grid-template-columns: minmax(0, 16em) minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 4px 16px;
-  min-height: 48px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--border);
-}
-.att-row:last-child { border-bottom: 0; }
-.att-name { font-size: 18px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
-.att-status { font-size: 15px; font-weight: 700; white-space: nowrap; }
-.att-time { color: var(--text-2); font-weight: 500; font-variant-numeric: tabular-nums; }
-.att-row .status-cell { justify-content: flex-end; }
-.att-calm { margin: 0; padding: 12px 20px 20px; color: var(--present); font-size: 17px; font-weight: 600; }
-.att-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
-  color: var(--text-2);
-  font-size: 15px;
-  font-weight: 600;
-  text-align: left;
-}
-.att-toggle:hover { background: var(--surface-2); }
-.att-toggle .icon { width: 16px; height: 16px; transition: transform var(--fast) var(--ease); }
-.att-toggle[aria-expanded="true"] .icon { transform: rotate(90deg); }
-#present-list .att-name { font-size: 16px; font-weight: 500; }
 
 /* ---------- Classes ---------- */
 .roster { max-height: 380px; overflow-y: auto; }
@@ -629,9 +591,6 @@ button:disabled { cursor: not-allowed; }
   .page-body .stats-row { grid-template-columns: repeat(2, 1fr); }
   .page-body .panel-head { flex-wrap: wrap; }
   .status-cell { gap: 6px; }
-  .att-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .att-status { justify-self: end; }
-  .att-row .status-cell { grid-column: 1 / -1; justify-content: flex-start; }
 }
 
 /* ---------- Motion ---------- */
@@ -664,7 +623,7 @@ button:disabled { cursor: not-allowed; }
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.page-head h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.page-head h1 { margin: 0; font-size: 20px; font-weight: 600; }
 .page-head .spacer { flex: 1; }
 .page-head .search { flex: 0 1 320px; min-width: 160px; border: 1px solid var(--border); }
 .page-body {
@@ -678,16 +637,16 @@ button:disabled { cursor: not-allowed; }
 
 .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
 .stat-card {
-  padding: 14px 18px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
-.stat-label { color: var(--text-2); font-size: 14px; font-weight: 500; }
-.stat-value { margin-top: 2px; font-size: 32px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.stat-label { color: var(--muted); font-size: 12px; }
+.stat-value { margin-top: 4px; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stat-value.positive { color: var(--success); }
-.stat-sub { margin-top: 2px; color: var(--muted); font-size: 12px; }
+.stat-sub { margin-top: 2px; color: var(--faint); font-size: 12px; }
 
 .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(max(320px, calc(50% - 8px)), 1fr)); gap: 16px; align-items: start; }
 .panel {
@@ -705,10 +664,10 @@ button:disabled { cursor: not-allowed; }
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
 }
-.panel-head h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.panel-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
 .panel-head .stat-sub { margin: 0; }
 .panel-body { padding: 12px 16px 16px; }
-.panel-empty { padding: 28px 16px; color: var(--muted); text-align: center; font-size: 13px; }
+.panel-empty { padding: 28px 16px; color: var(--faint); text-align: center; font-size: 13px; }
 
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table th {
