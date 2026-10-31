@@ -377,6 +377,7 @@ button:disabled { cursor: not-allowed; }
 .page-title h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .date-step { display: flex; align-items: center; gap: 2px; }
 .date-step .action { padding: 0 8px; }
+.date-step #today { margin-right: 6px; }
 .date-step input {
   height: 40px;
   padding: 0 10px;

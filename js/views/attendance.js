@@ -4,8 +4,6 @@ import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../f
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog } from '../modal.js';
 
-let date = todayKey();
-
 const SEG = [['present', 'P'], ['late', 'L'], ['absent', 'A']];
 
 // Whether the Present list is open. A per-device preference, so it lives outside the store.
@@ -36,6 +34,7 @@ export function renderAttendance(el) {
         </div>
         <span class="spacer"></span>
         <div class="date-step">
+          <button class="btn-link" id="today" hidden>Today</button>
           <button class="action" data-step="-1" aria-label="Previous day">${icon('chevronLeft')}</button>
           <input type="date" id="date" aria-label="Date">
           <button class="action" data-step="1" aria-label="Next day">${icon('chevronRight')}</button>
@@ -50,6 +49,9 @@ export function renderAttendance(el) {
   const bodyEl = el.querySelector('#body');
   const dateEl = el.querySelector('#date');
   const liveEl = el.querySelector('#live');
+  // Opens on today every time, including right after the kiosk, so a stale day never goes into Skyward.
+  let today = todayKey();
+  let date = today;
   // Students edited on this visit keep the place they started in, so a row doesn't jump out
   // from under the pointer. Maps student id to that starting status; cleared when the day changes.
   let pinned = new Map();
@@ -66,6 +68,7 @@ export function renderAttendance(el) {
     const cls = currentClass();
     el.querySelector('#title').textContent = cls?.name ?? 'Attendance';
     dateEl.value = date;
+    el.querySelector('#today').hidden = date === today;
     el.querySelector('#export').disabled = !cls;
     el.querySelector('#kiosk').disabled = !cls;
     if (!cls) {
@@ -134,6 +137,9 @@ export function renderAttendance(el) {
     if (!t) return;
     if (t.dataset.step) {
       setDate(addDays(date, Number(t.dataset.step)));
+    } else if (t.id === 'today') {
+      setDate(today);
+      dateEl.focus();
     } else if (t.dataset.student) {
       override(t.dataset.student, t.dataset.status);
     } else if (t.id === 'present-toggle') {
@@ -159,8 +165,25 @@ export function renderAttendance(el) {
     if (dateEl.value) setDate(dateEl.value);
   });
 
+  // A Chromebook left open overnight: if the page was showing today, follow it to the new day.
+  function checkDay() {
+    const now = todayKey();
+    if (now === today) return;
+    const wasToday = date === today;
+    today = now;
+    if (wasToday) setDate(now);
+    else render();
+  }
+  window.addEventListener('focus', checkDay);
+  document.addEventListener('visibilitychange', checkDay);
+
   render();
-  return subscribe(render);
+  const unsubscribe = subscribe(render);
+  return () => {
+    unsubscribe();
+    window.removeEventListener('focus', checkDay);
+    document.removeEventListener('visibilitychange', checkDay);
+  };
 }
 
 function exportDay(id, day) {
