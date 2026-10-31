@@ -406,7 +406,7 @@ button:disabled { cursor: not-allowed; }
 
 /* Keeps its full height so the page scrolls, instead of the column squeezing and clipping it. */
 .att-panel { flex: none; }
-.att-panel .panel-head .stat-sub { color: var(--muted); font-size: 13px; }
+.att-panel .panel-head .stat-sub { font-size: 13px; }
 /* No table chrome: a big name, a colored status, then the override. */
 .att-heading { margin: 0; padding: 14px 20px 2px; font-size: 15px; font-weight: 700; color: var(--text); }
 .att-list { padding: 0 8px 8px; }
@@ -674,7 +674,7 @@ button:disabled { cursor: not-allowed; }
 .stat-label { color: var(--text-2); font-size: 14px; font-weight: 500; }
 .stat-value { margin-top: 2px; font-size: 32px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
 .stat-value.positive { color: var(--success); }
-.stat-sub { margin-top: 2px; color: var(--faint); font-size: 12px; }
+.stat-sub { margin-top: 2px; color: var(--muted); font-size: 12px; }
 
 .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(max(320px, calc(50% - 8px)), 1fr)); gap: 16px; align-items: start; }
 .panel {
@@ -695,7 +695,7 @@ button:disabled { cursor: not-allowed; }
 .panel-head h2 { margin: 0; font-size: 17px; font-weight: 600; }
 .panel-head .stat-sub { margin: 0; }
 .panel-body { padding: 12px 16px 16px; }
-.panel-empty { padding: 28px 16px; color: var(--faint); text-align: center; font-size: 13px; }
+.panel-empty { padding: 28px 16px; color: var(--muted); text-align: center; font-size: 13px; }
 
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table th {
