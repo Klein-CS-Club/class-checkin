@@ -85,18 +85,18 @@ export function renderAttendance(el) {
     const place = (r) => pinned.get(r.student.id) ?? r.status;
     const toMark = ['absent', 'late', 'notyet'].flatMap((s) => rows.filter((r) => place(r) === s));
     const present = rows.filter((r) => place(r) === 'present');
+    // The day's counts in one line, exceptions first. Not yet only shows up when it applies.
+    const tally = ['absent', 'late', 'notyet', 'present']
+      .filter((s) => s !== 'notyet' || count(s))
+      .map((s) => `<span class="att-count"><b class="status-${s}">${count(s)}</b> ${STATUSES[s].toLowerCase()}</span>`)
+      .join('');
     bodyEl.innerHTML = `
-      <div class="stats-row">
-        ${['present', 'late', 'absent', 'notyet'].map((s) => `
-          <div class="stat-card">
-            <div class="stat-label">${STATUSES[s]}</div>
-            <div class="stat-value status-${s}">${count(s)}</div>
-          </div>`).join('')}
-      </div>
       <section class="panel att-panel">
         <div class="panel-head">
-          <h2>${escapeHtml(dayLabel(date))}${isToday ? ' · Today' : ''}</h2>
-          <span class="stat-sub">Late after ${escapeHtml(timeLabel(cls.lateAfter))}</span>
+          <div class="att-day">
+            <h2>${escapeHtml(dayLabel(date))}${isToday ? ' · Today' : ''}</h2>
+            <p class="att-tally">${tally}<span class="att-count">Late after ${escapeHtml(timeLabel(cls.lateAfter))}</span></p>
+          </div>
           <span class="spacer"></span>
           <button class="btn-link" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
         </div>
