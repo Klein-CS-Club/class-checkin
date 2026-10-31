@@ -33,10 +33,14 @@ The first run loads three demo classes with made-up names and a week of history.
 - **Classes** (`#/classes`): add a class with a "late after" time, then add students. You can paste names
   one per line, type a single name, or import a CSV. "Last, First" is flipped to "First Last", and names
   already on the roster are skipped.
-- **Attendance** (`#/attendance`): shows the period picked in the sidebar. Step through days with ‹ ›. Statuses are worked out from check-in times:
-  **Present** at or before the late-after minute, **Late** after it, **Absent** with no check-in, and
-  **Not yet** today until the late-after time. Tap P / L / A to override a status. **Edited · Undo** puts
-  it back to automatic. **Mark rest present** fills in everyone still absent.
+- **Attendance** (`#/attendance`): shows the period picked in the sidebar. Step through days with ‹ ›. It's
+  built for copying the day into Skyward, which assumes everyone is present: **Mark in Skyward** at the
+  top lists Absent, then Late (with check-in time), then Not yet, each by last name. When there's nobody
+  to mark it says so. Present students fold away below under **Present (N)**; the open or closed choice is
+  remembered on this device. Statuses are worked out from check-in times: **Present** at or before the
+  late-after minute, **Late** after it, **Absent** with no check-in, and **Not yet** today until the
+  late-after time. Tap P / L / A to override a status. **Edited · Undo** puts it back to automatic.
+  **Mark rest present** fills in everyone still absent.
 - **Export CSV** downloads the day you're looking at: Date, Class, Student, Status, Check-in time.
 - **Start check-in** locks the tablet into the kiosk for that class and hides the sidebar.
 - **Kiosk** (`#/checkin`): built for a Chromebook at the door. A dark bar shows the class, a live clock
@@ -59,7 +63,7 @@ The first run loads three demo classes with made-up names and a week of history.
 | `index.html` | Shell: sidebar, main view, modal root |
 | `css/styles.css` | All styles. Tokens are at the top, from the cash register |
 | `js/app.js` | Hash router. Forces the kiosk while it's on |
-| `js/store.js` | All state and actions; the only code that touches `localStorage` |
+| `js/store.js` | All state and actions; the only code that saves app data to `localStorage` |
 | `js/names.js` | Accent-free name search, sorting by last name, "Last, First" cleanup |
 | `js/csv.js` | CSV writer (BOM, quoting, formula guard), parser for roster import, download |
 | `js/format.js` | Local dates (`YYYY-MM-DD`), times, `escapeHtml` |
