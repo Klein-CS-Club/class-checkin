@@ -26,9 +26,9 @@ export function renderCheckin(el) {
             <input id="search" type="text" inputmode="search" enterkeyhint="go" placeholder="Start typing your name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
           </label>
           <button class="btn-primary btn-xl" id="go" disabled>Check in</button>
+          <div class="kiosk-undo" id="undo" hidden></div>
           <p class="kiosk-help">Type your name, then press Enter.</p>
           <p class="kiosk-help">Can’t find your name? Tell your teacher.</p>
-          <div class="kiosk-undo" id="undo" hidden></div>
         </section>
         <section class="kiosk-list" id="list" aria-label="Class list"></section>
       </div>
@@ -101,9 +101,15 @@ export function renderCheckin(el) {
   // New markup restarts the countdown when the next check-in replaces the notice.
   function showUndo(student, result) {
     undo = { result, query };
-    undoEl.innerHTML = `${icon('check')}<span class="kiosk-undo-text">Checked in <strong>${escapeHtml(student.name)}</strong></span>
-      <button class="btn-link" id="not-you">Not you?</button>
-      <button class="kiosk-undo-close" id="undo-close" aria-label="Close">${icon('close')}</button>
+    const label = result.kind === 'already' ? 'Already checked in' : 'Checked in';
+    undoEl.innerHTML = `
+      <span class="kiosk-undo-mark">${icon('check')}</span>
+      <span class="kiosk-undo-label"><span>${label} ·</span> <span>${time12(result.checkIn.at)}</span></span>
+      <strong class="kiosk-undo-name">${escapeHtml(student.name)}</strong>
+      <div class="kiosk-undo-actions">
+        <button class="btn-link" id="not-you">Not you?</button>
+        <button class="kiosk-undo-close" id="undo-close" aria-label="Close">${icon('close')}</button>
+      </div>
       <span class="kiosk-undo-bar" aria-hidden="true"></span>`;
     undoEl.hidden = false;
   }

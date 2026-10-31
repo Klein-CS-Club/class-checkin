@@ -506,26 +506,36 @@ button:disabled { cursor: not-allowed; }
 .kiosk-help { margin: 0; color: var(--muted); font-size: 16px; }
 .kiosk-undo {
   position: relative;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "mark label actions" "mark name name";
   align-items: center;
-  gap: 4px 8px;
-  margin-top: auto;
-  padding: 8px 6px 12px 14px;
+  gap: 0 12px;
+  padding: 10px 8px 18px 14px;
   overflow: hidden;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--success-soft);
-  color: var(--present);
-  font-size: 16px;
   animation: fade-in var(--med) var(--ease);
 }
 .kiosk-undo[hidden] { display: none; }
-.kiosk-undo > .icon { width: 18px; height: 18px; flex: none; }
-/* Shares a line with Not you? and X when there's room; on a narrow panel they wrap below. */
-.kiosk-undo-text { flex: 1 1 10em; min-width: 0; }
-/* Wraps as a whole, so a long name drops below "Checked in" instead of splitting. */
-.kiosk-undo strong { display: inline-block; overflow-wrap: anywhere; }
-.kiosk-undo .btn-link { margin-left: auto; font-size: 15px; white-space: nowrap; color: var(--text); text-decoration: underline; }
+.kiosk-undo-mark {
+  grid-area: mark;
+  align-self: start;
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--present);
+  color: #fff;
+}
+.kiosk-undo-mark .icon { width: 22px; height: 22px; stroke-width: 2.5; }
+.kiosk-undo-label span { white-space: nowrap; }
+.kiosk-undo-label { grid-area: label; color: var(--present); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* The name is the confirmation: big enough to read while turning away from the door. */
+.kiosk-undo-name { grid-area: name; padding-right: 8px; color: var(--text); font-size: 26px; font-weight: 700; line-height: 1.15; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.kiosk-undo-actions { grid-area: actions; display: flex; align-items: center; gap: 2px; }
+.kiosk-undo .btn-link { font-size: 15px; white-space: nowrap; color: var(--text); text-decoration: underline; }
 .kiosk-undo-close {
   display: grid;
   place-items: center;
