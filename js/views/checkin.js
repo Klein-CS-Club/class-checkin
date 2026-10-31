@@ -101,9 +101,9 @@ export function renderCheckin(el) {
   // New markup restarts the countdown when the next check-in replaces the notice.
   function showUndo(student, result) {
     undo = { result, query };
-    undoEl.innerHTML = `${icon('check')}<span>Checked in <strong>${escapeHtml(student.name)}</strong></span>
-      <button class="kiosk-undo-close" id="undo-close" aria-label="Close">${icon('close')}</button>
+    undoEl.innerHTML = `${icon('check')}<span class="kiosk-undo-text">Checked in <strong>${escapeHtml(student.name)}</strong></span>
       <button class="btn-link" id="not-you">Not you?</button>
+      <button class="kiosk-undo-close" id="undo-close" aria-label="Close">${icon('close')}</button>
       <span class="kiosk-undo-bar" aria-hidden="true"></span>`;
     undoEl.hidden = false;
   }
