@@ -404,6 +404,9 @@ button:disabled { cursor: not-allowed; }
 .seg .seg-late[aria-pressed="true"] { background: var(--warn-soft); color: var(--late); box-shadow: inset 0 0 0 1px #f1c9a6; }
 .seg .seg-absent[aria-pressed="true"] { background: var(--danger-soft); color: var(--absent); box-shadow: inset 0 0 0 1px #f5c6c7; }
 
+/* Keeps its full height so the page scrolls, instead of the column squeezing and clipping it. */
+.att-panel { flex: none; }
+
 /* ---------- Classes ---------- */
 .roster { max-height: 380px; overflow-y: auto; }
 .roster .list-row { padding: 6px 8px 6px 16px; }

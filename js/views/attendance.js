@@ -56,7 +56,7 @@ export function renderAttendance(el) {
             <div class="stat-value status-${s}">${count(s)}</div>
           </div>`).join('')}
       </div>
-      <section class="panel">
+      <section class="panel att-panel">
         <div class="panel-head">
           <h2>${escapeHtml(dayLabel(date))}${isToday ? ' · Today' : ''}</h2>
           <span class="stat-sub">Late after ${escapeHtml(timeLabel(cls.lateAfter))}</span>
