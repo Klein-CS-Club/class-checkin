@@ -464,12 +464,14 @@ button:disabled { cursor: not-allowed; }
 .kiosk-entry .btn-xl { height: 60px; font-size: 20px; }
 .kiosk-help { margin: 0; color: var(--muted); font-size: 16px; }
 .kiosk-undo {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px 8px;
   margin-top: auto;
-  padding: 12px 14px;
+  padding: 10px 6px 14px 14px;
+  overflow: hidden;
   border-radius: var(--radius);
   background: var(--success-soft);
   color: var(--present);
@@ -477,9 +479,29 @@ button:disabled { cursor: not-allowed; }
   animation: fade-in var(--med) var(--ease);
 }
 .kiosk-undo[hidden] { display: none; }
-.kiosk-undo > .icon { width: 18px; height: 18px; flex: none; }
-.kiosk-undo span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.kiosk-undo .btn-link { font-size: 15px; color: var(--text); text-decoration: underline; }
+.kiosk-undo > .icon { width: 18px; height: 18px; }
+.kiosk-undo strong { overflow-wrap: anywhere; }
+.kiosk-undo .btn-link { grid-column: 2; justify-self: start; margin-left: -6px; font-size: 15px; color: var(--text); text-decoration: underline; }
+.kiosk-undo-close {
+  display: grid;
+  place-items: center;
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+}
+.kiosk-undo-close:hover { background: rgb(17 24 39 / .06); }
+.kiosk-undo-close .icon { width: 18px; height: 18px; }
+/* Runs out over 8s, then the view closes the notice. Hovering pauses it. */
+.kiosk-undo-bar {
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  background: var(--present);
+  transform-origin: left;
+  animation: undo-countdown 8s linear forwards;
+}
+.kiosk-undo:hover .kiosk-undo-bar { animation-play-state: paused; }
+@keyframes undo-countdown { to { transform: scaleX(0); } }
 
 /* Only the list scrolls. */
 .kiosk-list {
@@ -571,6 +593,9 @@ button:disabled { cursor: not-allowed; }
     scroll-behavior: auto !important;
   }
   :active { transform: none !important; }
+  /* The countdown is what closes the undo notice, so it has to keep running. */
+  .kiosk-undo-bar { animation: undo-countdown 8s linear forwards !important; }
+  .kiosk-undo:hover .kiosk-undo-bar { animation-play-state: paused !important; }
 }
 /* ---------- Pages (shared layout for sidebar sections) ---------- */
 .page { flex: 1; min-height: 0; display: flex; flex-direction: column; }

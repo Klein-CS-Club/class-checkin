@@ -4,8 +4,6 @@ import { matchesSearch } from '../names.js';
 import { escapeHtml, todayKey, time12 } from '../format.js';
 import { openModal } from '../modal.js';
 
-const UNDO_MS = 5000;
-
 // A teacher's Present or Late in Attendance counts as checked in too.
 const isHere = (row) => row.status === 'present' || row.status === 'late';
 
@@ -46,7 +44,6 @@ export function renderCheckin(el) {
   let highlight = -1;
   let open = [];   // matching students not yet checked in; the highlight moves through these
   let undo = null; // { result, query } while the undo notice shows
-  let undoTimer = null;
   let clockTimer = null;
 
   // The highlighted row, or the only one left. Several matches and no highlight: nobody.
@@ -100,17 +97,18 @@ export function renderCheckin(el) {
     render();
   }
 
+  // The bar under the notice counts down (8s, paused while hovered) and closes it when it runs out.
+  // New markup restarts the countdown when the next check-in replaces the notice.
   function showUndo(student, result) {
-    clearTimeout(undoTimer);
     undo = { result, query };
     undoEl.innerHTML = `${icon('check')}<span>Checked in <strong>${escapeHtml(student.name)}</strong></span>
-      <button class="btn-link" id="not-you">Not you?</button>`;
+      <button class="kiosk-undo-close" id="undo-close" aria-label="Close">${icon('close')}</button>
+      <button class="btn-link" id="not-you">Not you?</button>
+      <span class="kiosk-undo-bar" aria-hidden="true"></span>`;
     undoEl.hidden = false;
-    undoTimer = setTimeout(hideUndo, UNDO_MS);
   }
 
   function hideUndo() {
-    clearTimeout(undoTimer);
     undo = null;
     undoEl.hidden = true;
   }
@@ -143,6 +141,10 @@ export function renderCheckin(el) {
 
   undoEl.addEventListener('click', (e) => {
     if (e.target.closest('#not-you')) notYou();
+    else if (e.target.closest('#undo-close')) { hideUndo(); searchEl.focus(); }
+  });
+  undoEl.addEventListener('animationend', (e) => {
+    if (e.animationName === 'undo-countdown') hideUndo();
   });
 
   // A click on empty space sends focus back to the name box.
@@ -177,7 +179,6 @@ export function renderCheckin(el) {
   searchEl.focus();
 
   return () => {
-    clearTimeout(undoTimer);
     clearTimeout(clockTimer);
     unsubscribe();
   };
