@@ -33,13 +33,16 @@ The first run loads three demo classes with made-up names and a week of history.
 - **Classes** (`#/classes`): add a class with a "late after" time, then add students. You can paste names
   one per line, type a single name, or import a CSV. "Last, First" is flipped to "First Last", and names
   already on the roster are skipped.
-- **Attendance** (`#/attendance`): shows the period picked in the sidebar. Step through days with ‹ ›. It's
+- **Attendance** (`#/attendance`): shows the period picked in the sidebar. It always opens on today
+  (including after leaving the kiosk) and follows the date past midnight. Step through days with ‹ ›,
+  and **Today** jumps back. The day's heading sums it up ("2 absent · 1 late · 15 present"). It's
   built for copying the day into Skyward, which assumes everyone is present: **Mark in Skyward** at the
   top lists Absent, then Late (with check-in time), then Not yet, each by last name. When there's nobody
   to mark it says so. Present students fold away below under **Present (N)**; the open or closed choice is
   remembered on this device. Statuses are worked out from check-in times: **Present** at or before the
   late-after minute, **Late** after it, **Absent** with no check-in, and **Not yet** today until the
-  late-after time. Tap P / L / A to override a status. **Edited · Undo** puts it back to automatic.
+  late-after time. Tap P / L / A to override a status; the row stays where it is until you change days,
+  so the list doesn't shift under you. **Edited · Undo** puts it back to automatic.
   **Mark rest present** fills in everyone still absent.
 - **Export CSV** downloads the day you're looking at: Date, Class, Student, Status, Check-in time.
 - **Start check-in** locks the tablet into the kiosk for that class and hides the sidebar.
@@ -47,10 +50,10 @@ The first run loads three demo classes with made-up names and a week of history.
   and date, and how many are checked in. Students type part of their name (accents optional, any word
   order) in the box on the left, and the class list on the right filters as they type. **Enter** or the
   big **Check in** button checks in the highlighted name (↑/↓) or the only one left; with several matches
-  it does nothing. Each row also has its own **Check in** button. Tapping a name does nothing, so
+  it does nothing, and the hint under the box says how many match and to keep typing or press ↓. Each row also has its own **Check in** button. Tapping a name does nothing, so
   scrolling can't check someone in by accident. Checked-in names drop below the rest, dimmed, with their
-  check-in time. A teacher's Present or Late counts as checked in. After each check-in a notice shows the
-  name with **Not you?** (undoes it) and **✕** (closes it). A bar under it counts down 8 seconds, then it
+  check-in time. A teacher's Present or Late counts as checked in. After each check-in a large notice right
+  under the button shows the name and time with **Not you?** (undoes it) and **✕** (closes it). A bar under it counts down 8 seconds, then it
   closes on its own. A second check-in on the same day saves nothing. The kiosk shows check-in
   times but never late status.
 - **Teacher** (top right of the kiosk) asks for the PIN to leave. The default PIN is **1234**, and you can
