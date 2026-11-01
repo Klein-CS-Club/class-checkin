@@ -214,3 +214,31 @@ export function loadDemo() {
 export function resetAll() {
   commit(initialState());
 }
+
+// The backup file: classes, rosters, attendance and the PIN, as JSON.
+export function backupText() {
+  const { classes, checkIns, overrides, settings } = state;
+  return JSON.stringify({ app: KEY, savedAt: new Date().toISOString(), pin: settings.pin, classes, checkIns, overrides });
+}
+
+// Reads a backup file's text, or throws if it isn't a backup from this app.
+export function readBackup(text) {
+  let data;
+  try { data = JSON.parse(text); } catch { data = null; }
+  if (data?.app !== KEY || !Array.isArray(data.classes) || !Array.isArray(data.checkIns)) {
+    throw new Error('That file isn’t a Class Check-in backup.');
+  }
+  return data;
+}
+
+// Replaces everything with a backup from readBackup.
+export function restoreBackup(data) {
+  const base = initialState();
+  commit({
+    ...base,
+    settings: { ...state.settings, pin: /^\d{4}$/.test(data.pin) ? data.pin : base.settings.pin },
+    classes: data.classes,
+    checkIns: data.checkIns,
+    overrides: data.overrides ?? {},
+  });
+}

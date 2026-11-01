@@ -56,9 +56,11 @@ export function namesFromCsv(text) {
   return rows.map((r) => r[0]);
 }
 
+export const downloadCsv = (filename, text) => downloadFile(filename, text, 'text/csv;charset=utf-8');
+
 // Saves text as a file through a Blob link, so nothing leaves the device.
-export function downloadCsv(filename, text) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+export function downloadFile(filename, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = Object.assign(document.createElement('a'), { href: url, download: filename });
   document.body.appendChild(a);
   a.click();

@@ -51,6 +51,10 @@ The first run loads three demo classes with made-up names and a week of history.
   times but never late status.
 - **Teacher** (top right of the kiosk) asks for the PIN to leave. The default PIN is **1234**, and you can
   change it in Settings. It only stops casual tapping. It isn't real security.
+- **Backup** (Settings): **Download backup** saves classes, rosters, attendance and the PIN as a JSON
+  file, and **Restore** loads one back, replacing what's on the device. Clearing the browser's data
+  erases everything, so download a new backup after changing rosters. Backups also move data to a new
+  device or web address.
 
 ## Where things live
 
