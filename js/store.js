@@ -310,8 +310,8 @@ export function resetAll() {
 
 // The backup file: classes, rosters, attendance and the PIN, as JSON.
 export function backupText() {
-  const { classes, checkIns, overrides, settings } = state;
-  return JSON.stringify({ app: KEY, savedAt: new Date().toISOString(), pin: settings.pin, classes, checkIns, overrides });
+  const { classes, checkIns, overrides, finalized, settings } = state;
+  return JSON.stringify({ app: KEY, savedAt: new Date().toISOString(), pin: settings.pin, classes, checkIns, overrides, finalized });
 }
 
 // Reads a backup file's text, or throws if it isn't a backup from this app.
@@ -324,14 +324,16 @@ export function readBackup(text) {
   return data;
 }
 
-// Replaces everything with a backup from readBackup.
+// Replaces everything with a backup from readBackup. Backups from before start times and finalizing
+// existed are fine: the old classes are upgraded and the missing parts start empty.
 export function restoreBackup(data) {
   const base = initialState();
   commit({
     ...base,
     settings: { ...state.settings, pin: /^\d{4}$/.test(data.pin) ? data.pin : base.settings.pin },
-    classes: data.classes,
+    classes: upgradeClasses(data.classes),
     checkIns: data.checkIns,
     overrides: data.overrides ?? {},
+    finalized: data.finalized ?? {},
   });
 }
