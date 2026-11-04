@@ -446,10 +446,17 @@ export function resetAll() {
   commit(initialState());
 }
 
-// The backup file: classes, rosters, attendance and the PIN, as JSON.
+// The backup file: classes, rosters, attendance, restroom trips and the PIN and restroom rules, as JSON.
 export function backupText() {
-  const { classes, checkIns, overrides, settings } = state;
-  return JSON.stringify({ app: KEY, savedAt: new Date().toISOString(), pin: settings.pin, classes, checkIns, overrides });
+  const { classes, checkIns, overrides, finalized, trips, queue, demoClock, settings } = state;
+  return JSON.stringify({
+    app: KEY,
+    savedAt: new Date().toISOString(),
+    pin: settings.pin,
+    capacity: settings.capacity,
+    restrictionMinutes: settings.restrictionMinutes,
+    classes, checkIns, overrides, finalized, trips, queue, demoClock,
+  });
 }
 
 // Reads a backup file's text, or throws if it isn't a backup from this app.
@@ -462,14 +469,25 @@ export function readBackup(text) {
   return data;
 }
 
-// Replaces everything with a backup from readBackup.
+// Replaces everything with a backup from readBackup. Backups from before restroom trips and start
+// times existed are fine: the missing parts start empty and the old classes are upgraded.
 export function restoreBackup(data) {
   const base = initialState();
+  const whole = (n, min, max, fallback) => (Number.isInteger(n) && n >= min && n <= max ? n : fallback);
   commit({
     ...base,
-    settings: { ...state.settings, pin: /^\d{4}$/.test(data.pin) ? data.pin : base.settings.pin },
-    classes: data.classes,
+    settings: {
+      ...state.settings,
+      pin: /^\d{4}$/.test(data.pin) ? data.pin : base.settings.pin,
+      capacity: whole(data.capacity, 1, 50, base.settings.capacity),
+      restrictionMinutes: whole(data.restrictionMinutes, 0, 120, base.settings.restrictionMinutes),
+    },
+    classes: upgradeClasses(data.classes),
     checkIns: data.checkIns,
     overrides: data.overrides ?? {},
+    finalized: data.finalized ?? {},
+    trips: data.trips ?? [],
+    queue: data.queue ?? [],
+    demoClock: data.demoClock ?? null,
   });
 }

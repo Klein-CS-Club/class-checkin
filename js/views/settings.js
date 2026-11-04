@@ -47,7 +47,7 @@ export function renderSettings(el) {
           <div class="list-row">
             <span class="list-text">
               <span class="list-title">Download backup</span>
-              <span class="list-sub">Saves your classes, rosters, attendance and PIN to a file. Clearing this browser’s data
+              <span class="list-sub">Saves your classes, rosters, attendance, restroom trips and settings to a file. Clearing this browser’s data
                 erases them, so download a new backup after you change rosters.</span>
             </span>
             <button class="btn-secondary" id="backup">Download backup</button>
