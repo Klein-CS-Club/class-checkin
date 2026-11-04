@@ -22,6 +22,7 @@ function initialState() {
     classes: [],
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
+    finalized: {},   // { 'classId|date': true } once the teacher has confirmed who is absent
     kiosk: null,     // { classId } while the check-in screen is locked on
   };
 }
@@ -102,6 +103,7 @@ export function deleteClass(id) {
     classes: state.classes.filter((c) => c.id !== id),
     checkIns: state.checkIns.filter((x) => x.classId !== id),
     overrides: Object.fromEntries(Object.entries(state.overrides).filter(([k]) => !k.startsWith(`${id}|`))),
+    finalized: Object.fromEntries(Object.entries(state.finalized).filter(([k]) => !k.startsWith(`${id}|`))),
     kiosk: state.kiosk?.classId === id ? null : state.kiosk,
   });
 }
@@ -160,6 +162,23 @@ export const isCheckedIn = (classId, studentId, date = todayKey()) => !!findChec
 // ---------- Status (derived, never stored) ----------
 const overrideKey = (classId, date, studentId) => `${classId}|${date}|${studentId}`;
 
+// One class on one date. Finalizing, the restroom queue and trips are all kept per session.
+export const sessionId = (classId, date) => `${classId}|${date}`;
+
+export const isFinalized = (classId, date) => !!state.finalized[sessionId(classId, date)];
+
+// Until the teacher finalizes, students who haven't checked in stay "Not yet" instead of
+// being marked absent while they might still arrive. Past days count as finalized.
+export function finalizeAttendance(classId, date) {
+  commit({ ...state, finalized: { ...state.finalized, [sessionId(classId, date)]: true } });
+}
+
+export function undoFinalize(classId, date) {
+  const finalized = { ...state.finalized };
+  delete finalized[sessionId(classId, date)];
+  commit({ ...state, finalized });
+}
+
 // A class starts at its usual start time unless that one date has its own.
 export const startTimeFor = (cls, date) => cls.dayStarts?.[date] ?? cls.startTime;
 
@@ -177,17 +196,14 @@ export function bellFor(cls, date) {
   return { startAt, cutoffAt: startAt + cls.lateMinutes * 60000 };
 }
 
-// An override wins. Otherwise a check-in at or before the late cutoff is present, after it is late,
-// and no check-in is absent (or "not yet" until the cutoff today).
-export function statusFor(cls, date, studentId, now = Date.now()) {
+// An override wins. Otherwise a check-in at or before the late cutoff is present and after it is
+// late. With no check-in, the student is absent once the day is finalized or over, else "not yet".
+export function statusFor(cls, date, studentId) {
   const override = state.overrides[overrideKey(cls.id, date, studentId)];
   if (override) return override;
-  const { cutoffAt } = bellFor(cls, date);
   const entry = findCheckIn(cls.id, date, studentId);
-  if (entry) return entry.at <= cutoffAt ? 'present' : 'late';
-  const today = todayKey();
-  if (date > today || (date === today && now <= cutoffAt)) return 'notyet';
-  return 'absent';
+  if (entry) return entry.at <= bellFor(cls, date).cutoffAt ? 'present' : 'late';
+  return isFinalized(cls.id, date) || date < todayKey() ? 'absent' : 'notyet';
 }
 
 // Whole minutes after the start time that a late student arrived, rounded up. Null when they
