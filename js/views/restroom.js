@@ -21,14 +21,14 @@ const msOut = (sum, studentId, at) => sum.trips
 export function ruleText(cls, date, at) {
   if (date !== todayFor(cls)) return 'Trips can only be started today. Students who are still out can be marked back.';
   const { startAt, endAt } = bellFor(cls, date);
-  const { capacity, restrictionMinutes } = rulesFor(cls);
+  const { restrictionMinutes } = rulesFor(cls);
   if (at < startAt) return `Class starts at ${time12(startAt)}. Students can join the waitlist until then.`;
   const opensAt = startAt + restrictionMinutes * 60000;
   if (at < opensAt) return `Trips open at ${time12(opensAt)}. Students can join the waitlist until then.`;
   const closed = closingProblem(cls, date, at);
   if (closed) return `${closed} Students who are out can still come back.`;
   const until = endAt ? ` until ${time12(endAt - restrictionMinutes * 60000)}` : '';
-  return `Trips are open${until}: ${capacity} at a time, in the order students asked.`;
+  return `Trips are open${until}.`;
 }
 
 export function restroomHtml(cls, date) {
