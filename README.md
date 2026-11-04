@@ -88,7 +88,7 @@ The first run loads three demo classes with made-up names and a week of history.
   browser's data erases everything, so download a new backup after changing rosters. Backups also move
   data to a new device or web address. Older backups still restore.
 - **Period 7 demo** (Settings → Open Period 7 demo): adds a made-up class that runs 2:00 to 3:00 PM, with a
-  clock that stays put until you press a time (1:59, 2:00, 2:05, 2:06, 2:10, 2:15, 2:50, 3:00 or any
+  clock that starts at the time you press and then keeps running (1:59, 2:00, 2:05, 2:06, 2:10, 2:15, 2:50, 3:00 or any
   other). Use it to try the opening and closing blocks, waitlist, capacity, overrides and late arrivals
   without waiting for the bell. It always uses 1 student at a time and a 10-minute block at each end, and **Reset demo** removes only its
   own records.

@@ -237,12 +237,14 @@ test('removing a student or a class removes their trips and waitlist spots', () 
 });
 
 // ---------- Period 7 demo ----------
-test('the demo has a frozen clock, its own records, and resets without touching real classes', () => {
+test('the demo has its own clock, its own records, and resets without touching real classes', () => {
   store.openDemo();
   const demo = store.demoClass();
-  const before = store.nowFor(demo.id);
-  assert.equal(store.nowFor(demo.id), before);
+  clock('08:20'); // the real time when the demo clock is set
   assert.equal(store.setDemoClock(atTime(day, '14:10')), '');
+  assert.equal(store.nowFor(demo.id), atTime(day, '14:10'));
+  clock('08:21'); // a real minute later, the demo clock has moved a minute too
+  assert.equal(store.nowFor(demo.id), atTime(day, '14:11'));
   store.requestRestroom(demo.id, store.todayFor(demo), demo.students[0].id);
   assert.match(store.setDemoClock(atTime(day, '14:00')), /before a trip/);
   store.resetDemo();

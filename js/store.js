@@ -29,7 +29,8 @@ function initialState() {
     trips: [],
     // Students waiting for the restroom, first come first served: [{ id, sessionId, classId, studentId, requestedAt: ms }]
     queue: [],
-    demoClock: null, // ms; the frozen "now" of the Period 7 demo class, or null
+    demoClock: null, // ms; the Period 7 demo's time when it was last set, or null
+    demoSetAt: null, // ms; the real time it was set, so the demo clock runs on from there
     kiosk: null,     // { classId } while the check-in screen is locked on
   };
 }
@@ -302,8 +303,13 @@ export function markRestPresent(classId, date) {
 // opening restriction is over, there's a free slot, and nobody else is waiting ahead of them.
 // The teacher can override all of that except the date, with a reason that stays on the trip.
 
-// The time a class goes by. Only the Period 7 demo has a frozen clock; every other class uses the real one.
-export const nowFor = (classId) => (classById(classId)?.demo && state.demoClock != null ? state.demoClock : Date.now());
+// The time a class goes by. Only the Period 7 demo has its own clock; every other class uses the real one.
+// Only the Period 7 demo has its own clock: it starts at the time you set and then keeps running.
+// Saved data from before it ran has no set time, so it runs from when the page loaded.
+const pageLoadedAt = Date.now();
+export const nowFor = (classId) => (classById(classId)?.demo && state.demoClock != null
+  ? state.demoClock + (Date.now() - (state.demoSetAt ?? pageLoadedAt))
+  : Date.now());
 export const todayFor = (cls) => dateKey(new Date(nowFor(cls.id)));
 
 // capacity: students out at once. restrictionMinutes: none may leave this long after the start.
@@ -421,7 +427,7 @@ export function cancelRequest(id) {
 }
 
 // ---------- Period 7 demo ----------
-// A made-up class with a frozen clock, for trying the restroom rules without waiting for the bell.
+// A made-up class with its own clock, for trying the restroom rules without waiting for the bell.
 const DEMO_NAMES = ['Alex River', 'Jordan Bell', 'Sam Flores', 'Taylor Chen', 'Robin Park', 'Casey Reed'];
 
 export const demoClass = () => state.classes.find((c) => c.demo);
@@ -433,7 +439,7 @@ export function openDemo() {
   if (existing) {
     // Keep the time of day it was left at, but on today's date so it lines up with Attendance.
     const timeOfDay = state.demoClock == null ? '13:59' : hhmm(state.demoClock);
-    commit({ ...state, currentClassId: existing.id, demoClock: atTime(today, timeOfDay) });
+    commit({ ...state, currentClassId: existing.id, demoClock: atTime(today, timeOfDay), demoSetAt: Date.now() });
     return;
   }
   const cls = {
@@ -447,7 +453,7 @@ export function openDemo() {
     days: {},
     students: DEMO_NAMES.map((name) => ({ id: uid(), name })),
   };
-  commit({ ...state, classes: [...state.classes, cls], currentClassId: cls.id, demoClock: atTime(today, '13:59') });
+  commit({ ...state, classes: [...state.classes, cls], currentClassId: cls.id, demoClock: atTime(today, '13:59'), demoSetAt: Date.now() });
 }
 
 // Returns an error message, or '' once the clock is set. It can't go back before a trip that already happened.
@@ -456,7 +462,7 @@ export function setDemoClock(at) {
   if (!cls || !Number.isFinite(at)) return 'Pick a time.';
   const latest = Math.max(0, ...state.trips.filter((t) => t.classId === cls.id).map((t) => t.returnedAt ?? t.departedAt));
   if (at < latest) return 'That is before a trip that already happened. Reset the demo to start over.';
-  commit({ ...state, demoClock: at });
+  commit({ ...state, demoClock: at, demoSetAt: Date.now() });
   return '';
 }
 
@@ -504,14 +510,14 @@ export function resetAll() {
 
 // The backup file: classes, rosters, attendance, restroom trips and the PIN and restroom rules, as JSON.
 export function backupText() {
-  const { classes, checkIns, overrides, finalized, trips, queue, demoClock, settings } = state;
+  const { classes, checkIns, overrides, finalized, trips, queue, demoClock, demoSetAt, settings } = state;
   return JSON.stringify({
     app: KEY,
     savedAt: new Date().toISOString(),
     pin: settings.pin,
     capacity: settings.capacity,
     restrictionMinutes: settings.restrictionMinutes,
-    classes, checkIns, overrides, finalized, trips, queue, demoClock,
+    classes, checkIns, overrides, finalized, trips, queue, demoClock, demoSetAt,
   });
 }
 
@@ -545,5 +551,6 @@ export function restoreBackup(data) {
     trips: data.trips ?? [],
     queue: data.queue ?? [],
     demoClock: data.demoClock ?? null,
+    demoSetAt: data.demoSetAt ?? null,
   });
 }

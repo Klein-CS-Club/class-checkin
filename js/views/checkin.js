@@ -64,7 +64,7 @@ export function renderCheckin(el) {
   const target = () => (query.trim() ? open[highlight] ?? (open.length === 1 ? open[0] : null) : null);
 
   function renderClock() {
-    const now = new Date();
+    const now = new Date(cls ? nowFor(cls.id) : Date.now());
     el.querySelector('#clock').textContent = time12(now);
     el.querySelector('#date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     // Wake again at the top of the next minute.
