@@ -3,5 +3,7 @@
 .impeccable
 .env*
 serve.py
+package.json
+tests
 PRODUCT.md
 README.md
