@@ -1,6 +1,6 @@
 import { icon } from '../icons.js';
-import { subscribe, classById, currentClass, dayRows, setOverride, markRestPresent, startKiosk, STATUSES } from '../store.js';
-import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../format.js';
+import { subscribe, classById, currentClass, dayRows, bellFor, setOverride, markRestPresent, startKiosk, STATUSES } from '../store.js';
+import { escapeHtml, todayKey, addDays, dayLabel, time12 } from '../format.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog } from '../modal.js';
 
@@ -59,7 +59,7 @@ export function renderAttendance(el) {
       <section class="panel att-panel">
         <div class="panel-head">
           <h2>${escapeHtml(dayLabel(date))}${isToday ? ' · Today' : ''}</h2>
-          <span class="stat-sub">Late after ${escapeHtml(timeLabel(cls.lateAfter))}</span>
+          <span class="stat-sub">Late after ${escapeHtml(time12(bellFor(cls, date).cutoffAt))}</span>
           <span class="spacer"></span>
           <button class="btn-link" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
         </div>

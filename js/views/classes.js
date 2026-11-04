@@ -25,7 +25,7 @@ export function renderClasses(el) {
             <div class="panel-head">
               <div>
                 <h2>${escapeHtml(c.name)}</h2>
-                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · Late after ${escapeHtml(timeLabel(c.lateAfter))}</div>
+                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · Starts ${escapeHtml(timeLabel(c.startTime))} · Late after ${c.lateMinutes} min</div>
               </div>
               <span class="spacer"></span>
               <button class="btn-link" data-a="edit-class" data-class="${c.id}">${icon('edit')}Edit</button>
@@ -83,9 +83,15 @@ export function classDialog(cls) {
             <input name="name" type="text" maxlength="60" autocomplete="off" placeholder="Period 1 · English 9" value="${escapeHtml(cls?.name ?? '')}" autofocus>
           </label>
           <label class="field">
-            <span>Late after</span>
-            <input name="lateAfter" type="time" value="${cls?.lateAfter ?? '08:00'}">
+            <span>Start time</span>
+            <input name="startTime" type="time" value="${cls?.startTime ?? '08:00'}">
           </label>
+          <label class="field">
+            <span>Late after (minutes)</span>
+            <input name="lateMinutes" type="number" min="0" max="60" step="1" inputmode="numeric" value="${cls?.lateMinutes ?? 5}">
+          </label>
+          <p class="hint">Arrivals more than this many minutes after the start time count as late.
+            You can change the start time for a single day on the Attendance page.</p>
           <p class="field-error" hidden></p>
           <div class="modal-actions">
             ${cls ? '<button type="button" class="btn-link danger-link" data-a="delete">Delete class</button><span class="spacer"></span>' : ''}
@@ -99,13 +105,16 @@ export function classDialog(cls) {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = form.name.value.trim();
-        const lateAfter = form.lateAfter.value;
-        const error = !name ? 'Give the class a name.' : !lateAfter ? 'Pick a late-after time.' : '';
+        const startTime = form.startTime.value;
+        const lateMinutes = Number(form.lateMinutes.value);
+        const error = !name ? 'Give the class a name.'
+          : !startTime ? 'Pick a start time.'
+          : !Number.isInteger(lateMinutes) || lateMinutes < 0 || lateMinutes > 60 ? 'Late after must be 0 to 60 whole minutes.' : '';
         errorEl.textContent = error;
         errorEl.hidden = !error;
         if (error) return;
-        if (cls) updateClass(cls.id, { name, lateAfter });
-        else selectClass(addClass(name, lateAfter)); // a new class opens as the current period
+        if (cls) updateClass(cls.id, { name, startTime, lateMinutes });
+        else selectClass(addClass(name, startTime, lateMinutes)); // a new class opens as the current period
         close();
       });
 

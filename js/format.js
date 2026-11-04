@@ -19,6 +19,9 @@ export const hhmm = (ms) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+// The moment "HH:mm" happens on a local date key.
+export const atTime = (date, hm) => new Date(`${date}T${hm}:00`).getTime();
+
 // "8:05 AM"
 export const time12 = (ms) => new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
