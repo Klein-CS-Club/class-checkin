@@ -486,6 +486,7 @@ button:disabled { cursor: not-allowed; }
 .kiosk-entry .btn-xl { height: 60px; font-size: 20px; }
 .kiosk-help { margin: 0; color: var(--muted); font-size: 16px; }
 .kiosk-session { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin-bottom: 12px; padding: 16px 20px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); }
+.kiosk-session.done { background: var(--surface-2); }
 .kiosk-session-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .kiosk-session p { margin: 0; }
 .kiosk-session-title { color: var(--muted); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }

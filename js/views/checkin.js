@@ -151,7 +151,7 @@ export function renderCheckin(el) {
   }
 
   const sessionCard = (t) => `
-    <div class="kiosk-session">
+    <div class="kiosk-session${t.returnedAt == null ? '' : ' done'}">
       <div class="kiosk-session-info">
         <p class="kiosk-session-title">${t.returnedAt == null ? 'Session' : 'Last session'}</p>
         <p class="kiosk-session-name">${escapeHtml(nameOf(t.studentId))}</p>
