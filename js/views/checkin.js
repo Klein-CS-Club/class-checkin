@@ -4,8 +4,9 @@ import { matchesSearch } from '../names.js';
 import { escapeHtml, todayKey, time12 } from '../format.js';
 import { openModal } from '../modal.js';
 
+// A student who checked in is checked in, even if they came so late the class counts them absent.
 // A teacher's Present or Late in Attendance counts as checked in too.
-const isHere = (row) => row.status === 'present' || row.status === 'late';
+const isHere = (row) => !!row.checkIn || row.status === 'present' || row.status === 'late';
 
 // The unattended Chromebook at the door. Shows check-in times, never late status.
 export function renderCheckin(el) {
