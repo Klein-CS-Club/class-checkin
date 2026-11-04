@@ -36,7 +36,7 @@ function tabsHtml(cls, restroom) {
     </nav>`;
 }
 
-const DEMO_TIMES = ['13:59', '14:00', '14:05', '14:06', '14:10', '14:15'];
+const DEMO_TIMES = ['13:59', '14:00', '14:05', '14:06', '14:10', '14:15', '14:50', '15:00'];
 
 // Period 7 demo only: its clock is frozen and moves when you press a time.
 function demoHtml(cls) {

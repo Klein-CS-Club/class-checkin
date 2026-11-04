@@ -27,13 +27,15 @@ export function renderSettings(el) {
         <section class="panel">
           <div class="panel-head"><h2>Restroom</h2><span class="stat-sub saved-note" id="rules-saved" hidden>${icon('check')}Saved</span></div>
           <form class="form panel-body" id="rules-form" novalidate>
-            <p class="hint">Students who can’t go yet wait on the waitlist, and the first in line goes when it’s their turn.</p>
+            <p class="hint">Students who can’t go yet wait on the waitlist, and the first in line goes when it’s their turn.
+              With 10 minutes, no one goes in the first 10 or the last 10 minutes of class. The last minutes only apply
+              to classes that have an end time.</p>
             <label class="field">
               <span>Students out at once</span>
               <input name="capacity" type="number" min="1" max="50" step="1" inputmode="numeric" value="${getState().settings.capacity}">
             </label>
             <label class="field">
-              <span>No trips for the first (minutes of class)</span>
+              <span>No trips in the first and last (minutes of class)</span>
               <input name="minutes" type="number" min="0" max="120" step="1" inputmode="numeric" value="${getState().settings.restrictionMinutes}">
             </label>
             <p class="field-error" hidden></p>

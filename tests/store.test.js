@@ -131,6 +131,45 @@ test('nobody leaves before class starts', () => {
   assert.match(store.departureEligibility(classId, day, ann), /Class starts at 8:00/);
 });
 
+// ---------- The 10:10 rule: no trips in the first or last minutes of class ----------
+test('with an end time, trips close in the last minutes of class', () => {
+  store.updateClass(classId, { endTime: '08:50' });
+  clock('08:39');
+  assert.equal(store.departureEligibility(classId, day, ann), '');
+  clock('08:40');
+  assert.match(store.departureEligibility(classId, day, ann), /last 10 minutes of class \(after 8:40/);
+  clock('08:50');
+  assert.match(store.departureEligibility(classId, day, ann), /Class is over/);
+});
+
+test('nobody joins the waitlist once trips have closed for the day', () => {
+  store.updateClass(classId, { endTime: '08:50' });
+  clock('08:45');
+  assert.equal(store.requestRestroom(classId, day, ann).kind, 'error');
+  assert.equal(store.restroomSummary(classId, day).queue.length, 0);
+});
+
+test('a student who is out can come back after trips close, and an override can still send one out', () => {
+  store.updateClass(classId, { endTime: '08:50' });
+  clock('08:30');
+  store.markOut(classId, day, ann);
+  clock('08:45');
+  assert.equal(store.markReturned(classId, day, ann).kind, 'returned');
+  assert.equal(store.markOut(classId, day, bob, 'emergency').kind, 'out');
+});
+
+test('a class with no end time has no last-minutes block', () => {
+  clock('08:59');
+  assert.equal(store.departureEligibility(classId, day, ann), '');
+});
+
+test('one day can have its own end time', () => {
+  store.updateClass(classId, { endTime: '08:50' });
+  store.setDaySchedule(classId, day, { startTime: '08:00', endTime: '09:30', lateMinutes: 5, absentMinutes: null });
+  clock('08:45');
+  assert.equal(store.departureEligibility(classId, day, ann), '');
+});
+
 test('with a free slot, a request sends the student out right away', () => {
   clock('08:20');
   assert.equal(store.requestRestroom(classId, day, ann).kind, 'out');

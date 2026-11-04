@@ -340,6 +340,19 @@ function sessionProblem(classId, date, studentId) {
   return '';
 }
 
+// The 10:10 rule's second half: no trips in the last minutes of class, or once it is over.
+// Empty when the class has no end time or isn't that close to ending.
+export function closingProblem(cls, date, at = nowFor(cls.id)) {
+  const { endAt } = bellFor(cls, date);
+  if (endAt === null) return '';
+  if (at >= endAt) return 'Class is over.';
+  const { restrictionMinutes } = rulesFor(cls);
+  const closesAt = endAt - restrictionMinutes * 60000;
+  return restrictionMinutes > 0 && at >= closesAt
+    ? `No trips in the last ${restrictionMinutes} minutes of class (after ${time12(closesAt)}).`
+    : '';
+}
+
 // Why this student can't leave right now. Empty when they can.
 export function departureEligibility(classId, date, studentId, at = nowFor(classId)) {
   const problem = sessionProblem(classId, date, studentId);
@@ -350,6 +363,8 @@ export function departureEligibility(classId, date, studentId, at = nowFor(class
   if (at < startAt) return `Class starts at ${time12(startAt)}.`;
   const opensAt = startAt + restrictionMinutes * 60000;
   if (at < opensAt) return `Trips open at ${time12(opensAt)}.`;
+  const closed = closingProblem(cls, date, at);
+  if (closed) return closed;
   const { active, queue } = restroomSummary(classId, date, at);
   if (active.length >= capacity) return 'The restroom is full.';
   if (queue.length && queue[0].studentId !== studentId) return 'Students ahead in the waitlist go first.';
@@ -363,6 +378,9 @@ export function requestRestroom(classId, date, studentId) {
   if (openTrip(studentId)) return result('already', 'Already out.');
   const sid = sessionId(classId, date);
   if (state.queue.some((q) => q.sessionId === sid && q.studentId === studentId)) return result('already', 'Already on the waitlist.');
+  // Waiting is pointless once trips have closed for the day, so don't take a place in line.
+  const closed = closingProblem(classById(classId), date, nowFor(classId));
+  if (closed) return result('error', closed);
   const reason = departureEligibility(classId, date, studentId);
   if (!reason) return markOut(classId, date, studentId);
   const entry = { id: uid(), sessionId: sid, classId, studentId, requestedAt: nowFor(classId) };
