@@ -745,6 +745,8 @@ button.list-row:hover { background: var(--surface-2); }
   .table tr { display: grid; grid-template-columns: 1fr auto; padding: 8px 0; border-bottom: 1px solid var(--border); }
   .table td { border: 0; padding: 4px 16px; }
   .table td.status-col { grid-column: 1 / -1; }
+  /* The header row is hidden here, so cells that need a name carry it with them. */
+  .table td[data-label]::before { content: attr(data-label) ": "; }
   /* When the row is too narrow, Edited · Undo wraps onto its own line above the buttons. */
   .status-cell { flex-wrap: wrap-reverse; }
   .edited-undo { order: 1; }

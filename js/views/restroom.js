@@ -18,6 +18,12 @@ const msOut = (sum, studentId, at) => sum.trips
   .filter((t) => t.studentId === studentId)
   .reduce((total, t) => total + Math.max(0, (t.returnedAt ?? at) - t.departedAt), 0);
 
+// The session's running totals. Time out counts trips that haven't ended yet.
+const totalsText = (sum) => {
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  return `${plural(sum.trips.length, 'trip')} · ${plural(sum.unique, 'student')} · ${duration(sum.totalMs)} out`;
+};
+
 export function ruleText(cls, date, at) {
   if (date !== todayFor(cls)) return 'Trips can only be started today. Students who are still out can be marked returned.';
   const { startAt } = bellFor(cls, date);
@@ -69,8 +75,8 @@ export function restroomHtml(cls, date) {
     return `
       <tr>
         <td class="student-name">${escapeHtml(s.name)}</td>
-        <td class="tabular muted">${sum.trips.filter((t) => t.studentId === s.id).length}</td>
-        <td class="tabular muted" data-out-for="${s.id}">${duration(msOut(sum, s.id, at))}</td>
+        <td class="tabular muted" data-label="Trips">${sum.trips.filter((t) => t.studentId === s.id).length}</td>
+        <td class="tabular muted" data-label="Time out" data-out-for="${s.id}">${duration(msOut(sum, s.id, at))}</td>
         <td class="status-col"><div class="status-cell">${action}</div></td>
       </tr>`;
   }).join('');
@@ -84,17 +90,11 @@ export function restroomHtml(cls, date) {
     </div>`).join('');
 
   return `
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-label">Out now</div><div class="stat-value">${sum.active.length}</div><div class="stat-sub">${capacity} at a time</div></div>
-      <div class="stat-card"><div class="stat-label">Waiting</div><div class="stat-value">${sum.queue.length}</div></div>
-      <div class="stat-card"><div class="stat-label">Trips</div><div class="stat-value">${sum.trips.length}</div><div class="stat-sub">${sum.unique} student${sum.unique === 1 ? '' : 's'}</div></div>
-      <div class="stat-card"><div class="stat-label">Time out</div><div class="stat-value tabular" id="r-total">${duration(sum.totalMs)}</div><div class="stat-sub">all trips</div></div>
-    </div>
     <p class="hint" id="r-rule">${escapeHtml(ruleText(cls, date, at))}</p>
     <p class="hint" role="status">${escapeHtml(notice)}</p>
     <div class="panels">
       <section class="panel trip-list">
-        <div class="panel-head"><h2>Out now</h2></div>
+        <div class="panel-head"><h2>Out now</h2><span class="stat-sub">${sum.active.length} of ${capacity} allowed</span></div>
         ${outRows || '<div class="panel-empty">Everyone is in class.</div>'}
       </section>
       <section class="panel trip-list">
@@ -111,7 +111,7 @@ export function restroomHtml(cls, date) {
         </table>` : '<div class="panel-empty">No students in this class yet.</div>'}
     </section>
     <section class="panel trip-list">
-      <div class="panel-head"><h2>Completed trips</h2></div>
+      <div class="panel-head"><h2>Completed trips</h2><span class="stat-sub" id="r-total">${totalsText(sum)}</span></div>
       ${doneRows || '<div class="panel-empty">Finished trips show up here.</div>'}
     </section>`;
 }
@@ -123,7 +123,7 @@ export function refreshRestroomLive(root, cls, date) {
   root.querySelectorAll('[data-since]').forEach((n) => { n.textContent = duration(at - Number(n.dataset.since)); });
   root.querySelectorAll('[data-out-for]').forEach((n) => { n.textContent = duration(msOut(sum, n.dataset.outFor, at)); });
   const total = root.querySelector('#r-total');
-  if (total) total.textContent = duration(sum.totalMs);
+  if (total) total.textContent = totalsText(sum);
   const rule = root.querySelector('#r-rule');
   if (rule) rule.textContent = ruleText(cls, date, at);
   root.querySelectorAll('[data-go]').forEach((b) => {
