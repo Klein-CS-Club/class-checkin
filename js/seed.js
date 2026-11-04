@@ -7,6 +7,7 @@ const CLASSES = [
   {
     name: 'Period 1 · English 9',
     startTime: '08:00',
+    endTime: '08:50',
     students: [
       'Maya Johnson', 'Liam Carter', 'Sofía Ramírez', 'Noah Kim', 'Ava Thompson', 'Ethan Brooks',
       'Zoë Bennett', 'Lucas Nguyen', 'Chloe Martin', 'Mateo Alvarez', 'Harper Lewis', 'Owen Patel',
@@ -16,6 +17,7 @@ const CLASSES = [
   {
     name: 'Period 2 · English 10',
     startTime: '08:55',
+    endTime: '09:45',
     students: [
       'José Hernández', 'Emma Wilson', 'Aiden Murphy', 'Priya Shah', 'Caleb Turner', 'Lily Anderson',
       'Đức Trần', 'Nora Hughes', 'Gabriel Silva', 'Mia Robinson', 'Samuel Price', 'Hana Sato',
@@ -25,6 +27,7 @@ const CLASSES = [
   {
     name: 'Period 4 · Creative Writing',
     startTime: '11:05',
+    endTime: '11:55',
     students: [
       'Ruby Foster', 'Isaac Bell', 'Aaliyah Grant', 'Henry Walsh', 'Camila Ortiz', 'Miles Reed',
       'Thảo Phạm', 'Jack Sullivan', 'Zara Ahmed', 'Theo Larsen', 'Nina Kowalski', 'Ezra Cohen',
@@ -56,6 +59,7 @@ export function demoData(uid) {
     id: uid(),
     name: c.name,
     startTime: c.startTime,
+    endTime: c.endTime,
     lateMinutes: LATE_MINUTES,
     absentMinutes: null,
     days: {},

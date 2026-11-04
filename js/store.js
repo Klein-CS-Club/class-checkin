@@ -19,8 +19,8 @@ function initialState() {
     // capacity: students allowed out at once. restrictionMinutes: no restroom trips this long after the start.
     settings: { pin: '1234', sidebarExpanded: true, capacity: 1, restrictionMinutes: 10 },
     currentClassId: null, // the period picked in the sidebar
-    // [{ id, name, startTime: 'HH:mm', lateMinutes, absentMinutes: n | null,
-    //    days: { date: { startTime, lateMinutes, absentMinutes } }, students: [{ id, name }] }]
+    // [{ id, name, startTime: 'HH:mm', endTime: 'HH:mm' | null, lateMinutes, absentMinutes: n | null,
+    //    days: { date: { startTime, endTime, lateMinutes, absentMinutes } }, students: [{ id, name }] }]
     classes: [],
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
@@ -43,7 +43,14 @@ function upgradeClasses(classes) {
     // A day that was changed keeps all of its numbers. The first version only kept a start time.
     const fromStarts = Object.fromEntries(
       Object.entries(dayStarts ?? {}).map(([date, startTime]) => [date, { startTime, lateMinutes, absentMinutes }]));
-    return { ...c, startTime: c.startTime ?? lateAfter ?? '08:00', lateMinutes, absentMinutes, days: c.days ?? fromStarts };
+    return {
+      ...c,
+      startTime: c.startTime ?? lateAfter ?? '08:00',
+      endTime: c.endTime ?? null,
+      lateMinutes,
+      absentMinutes,
+      days: c.days ?? fromStarts,
+    };
   });
 }
 
@@ -96,8 +103,8 @@ export function selectClass(id) {
 export const sortedStudents =(cls) => [...cls.students].sort((a, b) => compareByName(a.name, b.name));
 
 // ---------- Classes and rosters ----------
-export function addClass(name, startTime, lateMinutes, absentMinutes = null) {
-  const cls = { id: uid(), name, startTime, lateMinutes, absentMinutes, days: {}, students: [] };
+export function addClass(name, startTime, lateMinutes, absentMinutes = null, endTime = null) {
+  const cls = { id: uid(), name, startTime, endTime, lateMinutes, absentMinutes, days: {}, students: [] };
   commit({ ...state, classes: [...state.classes, cls] });
   return cls.id;
 }
@@ -195,11 +202,10 @@ export function undoFinalize(classId, date) {
 
 // The numbers a class runs on for one date: its usual ones, unless that date was changed.
 // absentMinutes is how long after the start an arrival counts as absent; null means never.
-export const scheduleFor = (cls, date) => cls.days?.[date] ?? {
-  startTime: cls.startTime,
-  lateMinutes: cls.lateMinutes,
-  absentMinutes: cls.absentMinutes ?? null,
-};
+// endTime is when class ends, or null when the class has none (then there is no last-minutes block).
+export const scheduleFor = (cls, date) => (cls.days?.[date]
+  ? { endTime: null, absentMinutes: null, ...cls.days[date] }
+  : { startTime: cls.startTime, endTime: cls.endTime ?? null, lateMinutes: cls.lateMinutes, absentMinutes: cls.absentMinutes ?? null });
 
 // A schedule puts that one date on its own numbers; null puts it back on the usual ones.
 export function setDaySchedule(classId, date, schedule) {
@@ -210,7 +216,8 @@ export function setDaySchedule(classId, date, schedule) {
 }
 
 // Why these can't be a class's late and absent minutes, or '' when they can.
-export function bellProblem(lateMinutes, absentMinutes) {
+export function bellProblem({ startTime, endTime = null, lateMinutes, absentMinutes = null }) {
+  if (endTime !== null && endTime <= startTime) return 'The end time must be after the start time.';
   if (!Number.isInteger(lateMinutes) || lateMinutes < 0 || lateMinutes > 60) return 'Late after must be 0 to 60 whole minutes.';
   if (absentMinutes === null) return '';
   if (!Number.isInteger(absentMinutes) || absentMinutes <= lateMinutes || absentMinutes > 240) {
@@ -221,10 +228,11 @@ export function bellProblem(lateMinutes, absentMinutes) {
 
 // When the class starts, when arrivals turn late, and when (if ever) they count as absent, as timestamps.
 export function bellFor(cls, date) {
-  const { startTime, lateMinutes, absentMinutes } = scheduleFor(cls, date);
+  const { startTime, endTime, lateMinutes, absentMinutes } = scheduleFor(cls, date);
   const startAt = atTime(date, startTime);
   return {
     startAt,
+    endAt: endTime ? atTime(date, endTime) : null,
     cutoffAt: startAt + lateMinutes * 60000,
     absentAt: absentMinutes == null ? null : startAt + absentMinutes * 60000,
   };
@@ -415,6 +423,7 @@ export function openDemo() {
     name: 'Period 7 · DEMO',
     demo: true,
     startTime: '14:00',
+    endTime: '15:00',
     lateMinutes: 5,
     absentMinutes: null,
     days: {},
