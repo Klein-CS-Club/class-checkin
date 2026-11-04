@@ -13,9 +13,11 @@ const routes = [
 ];
 
 // Each view is render(el) and may return a cleanup function.
+// Restroom is a tab of the Attendance page, so it has a route but no sidebar link of its own.
 const views = {
   checkin: renderCheckin,
   attendance: renderAttendance,
+  restroom: renderAttendance,
   classes: renderClasses,
   settings: renderSettings,
 };
@@ -33,16 +35,17 @@ function renderNav() {
 function currentPath() {
   if (getState().kiosk) return 'checkin';
   const path = location.hash.replace(/^#\/?/, '');
-  return routes.some((r) => r.path === path) ? path : 'attendance';
+  return path === 'restroom' || routes.some((r) => r.path === path) ? path : 'attendance';
 }
 
 function route() {
   const path = currentPath();
   if (`#/${path}` !== location.hash) history.replaceState(null, '', `#/${path}`);
   document.body.classList.toggle('kiosk-mode', path === 'checkin');
+  const navPath = path === 'restroom' ? 'attendance' : path;
   document.querySelectorAll('.nav-item[data-path]').forEach((a) => {
-    a.classList.toggle('active', a.dataset.path === path);
-    if (a.dataset.path === path) a.setAttribute('aria-current', 'page');
+    a.classList.toggle('active', a.dataset.path === navPath);
+    if (a.dataset.path === navPath) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
   if (cleanup) cleanup();

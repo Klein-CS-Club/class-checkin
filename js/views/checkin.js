@@ -1,11 +1,16 @@
 import { icon } from '../icons.js';
-import { getState, subscribe, classById, dayRows, checkIn, undoCheckIn, stopKiosk } from '../store.js';
+import {
+  getState, subscribe, classById, dayRows, checkIn, undoCheckIn, stopKiosk, sortedStudents, todayFor, nowFor,
+  restroomSummary, departureEligibility, requestRestroom, markOut, markReturned, cancelRequest,
+} from '../store.js';
 import { matchesSearch } from '../names.js';
-import { escapeHtml, todayKey, time12 } from '../format.js';
+import { escapeHtml, time12, duration } from '../format.js';
 import { openModal } from '../modal.js';
+import { ruleText } from './restroom.js';
 
+// A student who checked in is checked in, even if they came so late the class counts them absent.
 // A teacher's Present or Late in Attendance counts as checked in too.
-const isHere = (row) => row.status === 'present' || row.status === 'late';
+const isHere = (row) => !!row.checkIn || row.status === 'present' || row.status === 'late';
 
 // The unattended Chromebook at the door. Shows check-in times, never late status.
 export function renderCheckin(el) {
@@ -20,6 +25,10 @@ export function renderCheckin(el) {
       </header>
       <div class="kiosk-body">
         <section class="kiosk-entry">
+          <div class="kiosk-tabs" role="group" aria-label="What do you need?">
+            <button class="kiosk-tab" data-mode="checkin" aria-pressed="true">Check in</button>
+            <button class="kiosk-tab" data-mode="restroom" aria-pressed="false">Restroom</button>
+          </div>
           <label class="kiosk-label" for="search">Your name</label>
           <label class="search kiosk-search">
             ${icon('search')}
@@ -28,6 +37,7 @@ export function renderCheckin(el) {
           <button class="btn-primary btn-xl" id="go" disabled>Check in</button>
           <div class="kiosk-undo" id="undo" hidden></div>
           <p class="kiosk-help" id="hint">Type your name, then press Enter.</p>
+          <p class="restroom-rule" id="rule" hidden></p>
           <p class="kiosk-help">Can’t find your name? Tell your teacher.</p>
         </section>
         <section class="kiosk-list" id="list" aria-label="Class list"></section>
@@ -43,31 +53,44 @@ export function renderCheckin(el) {
   const hintEl = el.querySelector('#hint');
   let query = '';
   let highlight = -1;
-  let open = [];   // matching students not yet checked in; the highlight moves through these
+  let open = [];   // matching students with something to press; the highlight moves through these
   let undo = null; // { result, query } while the undo notice shows
+  let mode = 'checkin'; // or 'restroom'
+  let restroomSig = ''; // what the Restroom list last showed, so the timer only redraws when it changes
   let clockTimer = null;
+  let liveTimer = null;
 
   // The highlighted row, or the only one left. Several matches and no highlight: nobody.
   const target = () => (query.trim() ? open[highlight] ?? (open.length === 1 ? open[0] : null) : null);
 
   function renderClock() {
-    const now = new Date();
+    const now = new Date(cls ? nowFor(cls.id) : Date.now());
     el.querySelector('#clock').textContent = time12(now);
     el.querySelector('#date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     // Wake again at the top of the next minute.
     clockTimer = setTimeout(() => { renderClock(); render(); }, 60000 - (now % 60000));
   }
 
-  const row = ({ student }, i) => `
+  const row = ({ student, act }, i) => `
     <div class="kiosk-row${i === highlight ? ' highlight' : ''}">
       <span class="kiosk-name">${escapeHtml(student.name)}</span>
-      <button class="btn-primary" data-id="${student.id}">Check in</button>
+      <button class="btn-primary" data-id="${student.id}">${act ? act.label : 'Check in'}</button>
     </div>`;
   const doneRow = ({ student, checkIn: entry }) => `
     <div class="kiosk-row done">
       <span class="kiosk-name">${escapeHtml(student.name)}</span>
       <span class="kiosk-done">${icon('check')}Checked in${entry ? ` · ${time12(entry.at)}` : ''}</span>
     </div>`;
+  // Several names and none picked: Enter does nothing, so say what to do instead.
+  function setHints(matchCount, pressText) {
+    const several = query.trim() && open.length > 1 && !open[highlight];
+    hintEl.textContent = several
+      ? `${open.length} names match. Keep typing, or press ↓ to choose yours.`
+      : target() ? pressText(target()) : 'Type your name, then press Enter.';
+    liveEl.textContent = several
+      ? `${open.length} names match. Keep typing, or press the down arrow to choose yours.`
+      : matchCount ? `${matchCount} names` : 'No matching names';
+  }
 
   function render() {
     if (!cls) {
@@ -75,7 +98,8 @@ export function renderCheckin(el) {
       searchEl.disabled = true;
       return;
     }
-    const rows = dayRows(cls.id, todayKey());
+    if (mode === 'restroom') return renderRestroom();
+    const rows = dayRows(cls.id, todayFor(cls));
     el.querySelector('#count').textContent = `${rows.filter(isHere).length} of ${rows.length} checked in`;
 
     const matches = rows.filter((r) => matchesSearch(r.student.name, query));
@@ -83,18 +107,115 @@ export function renderCheckin(el) {
     open = matches.filter((r) => !isHere(r));
     highlight = Math.min(highlight, open.length - 1);
     goEl.disabled = !target();
-    // Several names and none picked: Enter does nothing, so say what to do instead.
-    const several = query.trim() && open.length > 1 && !open[highlight];
-    hintEl.textContent = several
-      ? `${open.length} names match. Keep typing, or press ↓ to choose yours.`
-      : target() ? `Press Enter to check in ${target().student.name}.` : 'Type your name, then press Enter.';
-    liveEl.textContent = several
-      ? `${open.length} names match. Keep typing, or press the down arrow to choose yours.`
-      : matches.length ? `${matches.length} names` : 'No matching names';
+    setHints(matches.length, (t) => `Press Enter to check in ${t.student.name}.`);
     listEl.innerHTML = matches.length
       ? open.map(row).join('') + done.map(doneRow).join('')
       : `<p class="kiosk-empty">No names match “${escapeHtml(query)}”.</p>`;
     listEl.querySelector('.highlight')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  // ----- Restroom tab -----
+  // What a student can do right now. kind is null when all they can do is wait their turn.
+  // queueId is set while they are on the waitlist, so "Leave waitlist" knows which place to remove.
+  function restroomAction(student, sum, at) {
+    if (sum.active.some((t) => t.studentId === student.id)) return { kind: 'return', label: 'I’m back' };
+    const reason = departureEligibility(cls.id, todayFor(cls), student.id, at);
+    const place = sum.queue.findIndex((q) => q.studentId === student.id);
+    if (place >= 0) {
+      const waiting = { place: place + 1, queueId: sum.queue[place].id };
+      return reason ? { kind: null, reason, ...waiting } : { kind: 'go', label: 'Go now', ...waiting };
+    }
+    return { kind: 'request', label: reason ? 'Join waitlist' : 'Go to restroom', reason };
+  }
+
+  const nameOf = (studentId) => cls.students.find((s) => s.id === studentId)?.name ?? 'Removed student';
+
+  // The right side, top to bottom: sessions (who is out), the waitlist, then everyone else.
+  // Students who are out come back from their Session card, so they are not in the name list.
+  function restroomRows() {
+    const at = nowFor(cls.id);
+    const sum = restroomSummary(cls.id, todayFor(cls), at);
+    const all = sortedStudents(cls)
+      .filter((s) => matchesSearch(s.name, query))
+      .map((student) => ({ student, act: restroomAction(student, sum, at) }));
+    const waitlist = all.filter((r) => r.act.place).sort((a, b) => a.act.place - b.act.place);
+    const names = all.filter((r) => !r.act.place && r.act.kind !== 'return');
+    // A session lasts from leaving to coming back. With nobody out, the last finished trip stays so its times can be read.
+    const last = sum.completed.reduce((a, t) => (!a || t.returnedAt > a.returnedAt ? t : a), null);
+    const sessions = sum.active.length ? sum.active : last ? [last] : [];
+    const sig = JSON.stringify([
+      sum.active.length, sum.queue.length, sessions.map((t) => [t.id, t.returnedAt]),
+      all.map((r) => [r.student.id, r.act.kind, r.act.label, r.act.place, r.act.reason]),
+    ]);
+    return { sum, all, waitlist, names, sessions, sig };
+  }
+
+  const sessionCard = (t) => `
+    <div class="kiosk-session${t.returnedAt == null ? '' : ' done'}">
+      <div class="kiosk-session-info">
+        <p class="kiosk-session-title">${t.returnedAt == null ? 'Session' : 'Last session'}</p>
+        <p class="kiosk-session-name">${escapeHtml(nameOf(t.studentId))}</p>
+        <p class="kiosk-session-sub">Time out: ${time12(t.departedAt)}</p>
+        <p class="kiosk-session-sub">Time in: ${t.returnedAt == null ? '—' : time12(t.returnedAt)}</p>
+      </div>
+      <div class="stopwatch" data-trip="${t.id}" role="timer" aria-label="Time out for this trip"></div>
+      ${t.returnedAt == null ? `<button class="btn-primary" data-return="${t.studentId}">I’m back</button>` : ''}
+    </div>`;
+
+  function renderRestroom() {
+    const { sum, all, waitlist, names, sessions, sig } = restroomRows();
+    restroomSig = sig;
+    el.querySelector('#count').textContent = `Out: ${sum.active.length} · Waiting: ${sum.queue.length}`;
+    showRule();
+    // Enter and the highlight move through what can be pressed: whose turn it is, then the names.
+    open = [...waitlist.filter((r) => r.act.kind), ...names.filter((r) => r.act.kind)];
+    highlight = Math.min(highlight, open.length - 1);
+    goEl.textContent = target()?.act.label ?? 'Go to restroom';
+    goEl.disabled = !target();
+    setHints(all.length, (t) => `Press Enter: ${t.act.label} (${t.student.name}).`);
+
+    const waitRow = (r) => `
+      <div class="kiosk-row wait${open.indexOf(r) === highlight && highlight >= 0 ? ' highlight' : ''}">
+        <span class="kiosk-name">${escapeHtml(r.student.name)}<small class="kiosk-sub">#${r.act.place} · ${r.act.kind ? 'Your turn' : escapeHtml(r.act.reason)}</small></span>
+        ${r.act.kind ? `<button class="btn-primary" data-id="${r.student.id}">Go now</button>` : ''}
+        <button class="btn-gray" data-leave="${r.act.queueId}" aria-label="Leave waitlist: ${escapeHtml(r.student.name)}">Leave waitlist</button>
+      </div>`;
+    const nameRow = (r) => row(r, open.indexOf(r));
+    const heading = (text) => `<h2 class="kiosk-list-title">${text}</h2>`;
+    const above = sessions.length || waitlist.length;
+
+    listEl.innerHTML = sessions.map(sessionCard).join('')
+      + (waitlist.length ? heading('Waitlist') + waitlist.map(waitRow).join('') : '')
+      + (names.length ? (above ? heading('Class list') : '') + names.map(nameRow).join('') : '')
+      + (all.length ? '' : `<p class="kiosk-empty">No names match “${escapeHtml(query)}”.</p>`);
+    tickSessions(sessions);
+    listEl.querySelector('.highlight')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  // The opening time or the rule in force, shown once instead of on every row.
+  function showRule() {
+    const ruleEl = el.querySelector('#rule');
+    ruleEl.hidden = mode !== 'restroom';
+    if (mode === 'restroom') ruleEl.textContent = ruleText(cls, todayFor(cls), nowFor(cls.id));
+  }
+
+  // The running timers count up in place, without redrawing the cards.
+  function tickSessions(sessions) {
+    const at = nowFor(cls.id);
+    sessions.forEach((t) => {
+      const n = listEl.querySelector(`[data-trip="${t.id}"]`);
+      if (n) n.textContent = duration((t.returnedAt ?? at) - t.departedAt);
+    });
+  }
+
+  // Trips can open or a slot can free up with nobody touching the screen, so check every second.
+  // Redrawing only when something changed keeps a tap from landing on a list that just rebuilt.
+  function refreshRestroom() {
+    if (!cls || mode !== 'restroom') return;
+    showRule();
+    const { sessions, sig } = restroomRows();
+    if (sig !== restroomSig) render();
+    else tickSessions(sessions);
   }
 
   function setQuery(value) {
@@ -145,12 +266,44 @@ export function renderCheckin(el) {
     searchEl.focus();
   }
 
-  goEl.addEventListener('click', () => { const t = target(); if (t) doCheckIn(t); });
+  // No notice here: the list changing is the answer (a name joins the waitlist, a Session card starts or ends).
+  // Screen readers still get the result.
+  function doRestroom({ student, act }) {
+    const run = { return: markReturned, go: markOut, request: requestRestroom }[act.kind];
+    const { message } = run(cls.id, todayFor(cls), student.id);
+    setQuery('');
+    liveEl.textContent = `${student.name}: ${message}`;
+    searchEl.focus();
+  }
+
+  const activate = (r) => (mode === 'restroom' ? doRestroom(r) : doCheckIn(r));
+
+  goEl.addEventListener('click', () => { const t = target(); if (t) activate(t); });
 
   listEl.addEventListener('click', (e) => {
+    const back = e.target.closest('[data-return]')?.dataset.return;
+    if (back) return doRestroom({ student: cls.students.find((s) => s.id === back), act: { kind: 'return' } });
+    const leave = e.target.closest('[data-leave]')?.dataset.leave;
+    if (leave) {
+      cancelRequest(leave);
+      liveEl.textContent = 'Left the waitlist';
+      return render();
+    }
     const id = e.target.closest('[data-id]')?.dataset.id;
     const r = id && open.find((o) => o.student.id === id);
-    if (r) doCheckIn(r);
+    if (r) activate(r);
+  });
+
+  el.querySelector('.kiosk-tabs').addEventListener('click', (e) => {
+    const next = e.target.closest('[data-mode]')?.dataset.mode;
+    if (!next || next === mode) return;
+    mode = next;
+    el.querySelectorAll('.kiosk-tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    goEl.textContent = mode === 'restroom' ? 'Go to restroom' : 'Check in';
+    showRule();
+    hideUndo();
+    setQuery('');
+    searchEl.focus();
   });
 
   undoEl.addEventListener('click', (e) => {
@@ -177,7 +330,7 @@ export function renderCheckin(el) {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const t = target();
-      if (t) doCheckIn(t);
+      if (t) activate(t);
     } else if (e.key === 'Escape') {
       setQuery('');
     }
@@ -190,10 +343,12 @@ export function renderCheckin(el) {
   const unsubscribe = subscribe(() => { if (getState().kiosk) render(); });
   renderClock();
   render();
+  liveTimer = setInterval(refreshRestroom, 1000);
   searchEl.focus();
 
   return () => {
     clearTimeout(clockTimer);
+    clearInterval(liveTimer);
     unsubscribe();
   };
 }

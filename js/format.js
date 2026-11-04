@@ -19,8 +19,36 @@ export const hhmm = (ms) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+// The moment "HH:mm" happens on a local date key.
+export const atTime = (date, hm) => new Date(`${date}T${hm}:00`).getTime();
+
 // "8:05 AM"
 export const time12 = (ms) => new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+// What someone types for a time → "HH:mm", or null when it isn't a time.
+// "8", "8:05", "8:05 am", "2:30pm" and "1430" all work. With no am or pm, 7 to 11 mean morning and
+// 1 to 6 mean afternoon (classes don't start at 3 AM), 12 is noon, and 13 to 23 are 24-hour times.
+export function parseTime(text) {
+  const match = /^(\d{1,2})(?::?(\d{2}))?\s*(?:([ap])\.?m?\.?)?$/i.exec(String(text).trim());
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2] ?? 0);
+  const half = match[3]?.toLowerCase();
+  if (minute > 59) return null;
+  if (half) {
+    if (hour < 1 || hour > 12) return null;
+    hour = (hour % 12) + (half === 'p' ? 12 : 0);
+  } else if (hour >= 1 && hour <= 6) {
+    hour += 12;
+  }
+  return hour > 23 ? null : `${pad(hour)}:${pad(minute)}`;
+}
+
+// 125000 → "2m 05s"
+export const duration = (ms) => {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(sec / 60)}m ${pad(sec % 60)}s`;
+};
 
 // "08:05" → "8:05 AM"
 export const timeLabel = (hm) => time12(new Date(`2000-01-01T${hm}:00`).getTime());

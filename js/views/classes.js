@@ -1,6 +1,7 @@
 import { icon } from '../icons.js';
-import { getState, subscribe, classById, sortedStudents, addClass, selectClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
-import { escapeHtml, timeLabel } from '../format.js';
+import { getState, subscribe, classById, sortedStudents, bellProblem, addClass, selectClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
+import { escapeHtml, timeLabel, parseTime } from '../format.js';
+import { showTimeHint } from './timeinput.js';
 import { namesFromCsv } from '../csv.js';
 import { openModal, confirmDialog } from '../modal.js';
 
@@ -25,7 +26,7 @@ export function renderClasses(el) {
             <div class="panel-head">
               <div>
                 <h2>${escapeHtml(c.name)}</h2>
-                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · Late after ${escapeHtml(timeLabel(c.lateAfter))}</div>
+                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · ${escapeHtml(timeLabel(c.startTime))}${c.endTime ? `–${escapeHtml(timeLabel(c.endTime))}` : ''} · Late after ${c.lateMinutes} min${c.absentMinutes ? ` · Absent after ${c.absentMinutes} min` : ''}</div>
               </div>
               <span class="spacer"></span>
               <button class="btn-link" data-a="edit-class" data-class="${c.id}">${icon('edit')}Edit</button>
@@ -83,9 +84,25 @@ export function classDialog(cls) {
             <input name="name" type="text" maxlength="60" autocomplete="off" placeholder="Period 1 · English 9" value="${escapeHtml(cls?.name ?? '')}" autofocus>
           </label>
           <label class="field">
-            <span>Late after</span>
-            <input name="lateAfter" type="time" value="${cls?.lateAfter ?? '08:00'}">
+            <span>Start time</span>
+            <input name="startTime" type="text" autocomplete="off" placeholder="8:00 AM" value="${timeLabel(cls?.startTime ?? '08:00')}">
           </label>
+          <p class="hint" id="start-hint"></p>
+          <label class="field">
+            <span>End time (optional)</span>
+            <input name="endTime" type="text" autocomplete="off" placeholder="8:50 AM" value="${cls?.endTime ? escapeHtml(timeLabel(cls.endTime)) : ''}">
+          </label>
+          <p class="hint" id="end-hint"></p>
+          <label class="field">
+            <span>Late after (minutes)</span>
+            <input name="lateMinutes" type="number" min="0" max="60" step="1" inputmode="numeric" value="${cls?.lateMinutes ?? 5}">
+          </label>
+          <label class="field">
+            <span>Absent after (minutes, optional)</span>
+            <input name="absentMinutes" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="Never" value="${cls?.absentMinutes ?? ''}">
+          </label>
+          <p class="hint">Arrivals more than “late after” minutes past the start time count as late. If you set “absent after”,
+            arrivals past that count as absent instead. You can change any of these for a single day on the Attendance page.</p>
           <p class="field-error" hidden></p>
           <div class="modal-actions">
             ${cls ? '<button type="button" class="btn-link danger-link" data-a="delete">Delete class</button><span class="spacer"></span>' : ''}
@@ -95,17 +112,27 @@ export function classDialog(cls) {
         </form>`;
       const form = body.querySelector('form');
       const errorEl = form.querySelector('.field-error');
+      showTimeHint(form.startTime, form.querySelector('#start-hint'));
+      showTimeHint(form.endTime, form.querySelector('#end-hint'), { label: 'Ends at', optional: true });
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = form.name.value.trim();
-        const lateAfter = form.lateAfter.value;
-        const error = !name ? 'Give the class a name.' : !lateAfter ? 'Pick a late-after time.' : '';
+        const startTime = parseTime(form.startTime.value);
+        const lateMinutes = Number(form.lateMinutes.value);
+        const absentText = form.absentMinutes.value.trim();
+        const absentMinutes = absentText === '' ? null : Number(absentText);
+        const endText = form.endTime.value.trim();
+        const endTime = endText === '' ? null : parseTime(endText);
+        const error = !name ? 'Give the class a name.'
+          : !startTime ? 'Type a start time like 8:00 AM.'
+          : endText !== '' && !endTime ? 'Type an end time like 8:50 AM, or leave it empty.'
+          : bellProblem({ startTime, endTime, lateMinutes, absentMinutes });
         errorEl.textContent = error;
         errorEl.hidden = !error;
         if (error) return;
-        if (cls) updateClass(cls.id, { name, lateAfter });
-        else selectClass(addClass(name, lateAfter)); // a new class opens as the current period
+        if (cls) updateClass(cls.id, { name, startTime, endTime, lateMinutes, absentMinutes });
+        else selectClass(addClass(name, startTime, lateMinutes, absentMinutes, endTime)); // a new class opens as the current period
         close();
       });
 

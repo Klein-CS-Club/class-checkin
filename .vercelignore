@@ -1,0 +1,9 @@
+# Only the app itself goes on the site.
+.claude
+.impeccable
+.env*
+serve.py
+package.json
+tests
+PRODUCT.md
+README.md
