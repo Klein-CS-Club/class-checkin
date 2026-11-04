@@ -25,8 +25,8 @@ A single-classroom tool that never sends student names anywhere. Everything live
 
 - The kiosk runs all period on the Chromebook at the door, locked behind a teacher PIN (default 1234; casual-tap protection, not security).
 - The teacher uses the same device and browser for Attendance, since data lives in that browser's `localStorage`.
-- Skyward is the school's system of record; this app feeds it by hand. Export CSV (Date, Class, Student, Status, Check-in time) is a backup and a way to open the day in Sheets or Excel.
-- Statuses come from check-in times against each class's "late after" minute: Present, Late, Absent, Not yet (today, before late-after). The teacher can override with P / L / A and undo the override.
+- Skyward is the school's system of record; this app feeds it by hand. Export CSV (Date, Class, Student, Status, Check-in time, Minutes late) is a backup and a way to open the day in Sheets or Excel.
+- Each class has a start time, an optional end time, a number of "late after" minutes and an optional "absent after" number (a single day can have its own times). Statuses come from check-in times against those cutoffs: Present, Late, Absent for an arrival past the absent cutoff, Not yet (hasn't checked in), and Absent for no check-in once the teacher finalizes the day or the day is over. The teacher can override with P / L / A and undo the override.
 
 ## Capabilities and Constraints
 
