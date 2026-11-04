@@ -1,10 +1,10 @@
 import { icon } from '../icons.js';
 import {
   getState, subscribe, classById, dayRows, checkIn, undoCheckIn, stopKiosk, sortedStudents, todayFor, nowFor,
-  restroomSummary, departureEligibility, requestRestroom, markOut, markReturned,
+  restroomSummary, departureEligibility, requestRestroom, markOut, markReturned, cancelRequest,
 } from '../store.js';
 import { matchesSearch } from '../names.js';
-import { escapeHtml, time12 } from '../format.js';
+import { escapeHtml, time12, duration } from '../format.js';
 import { openModal } from '../modal.js';
 import { ruleText } from './restroom.js';
 
@@ -81,12 +81,6 @@ export function renderCheckin(el) {
       <span class="kiosk-name">${escapeHtml(student.name)}</span>
       <span class="kiosk-done">${icon('check')}Checked in${entry ? ` · ${time12(entry.at)}` : ''}</span>
     </div>`;
-  const waitingRow = ({ student, act }) => `
-    <div class="kiosk-row done">
-      <span class="kiosk-name">${escapeHtml(student.name)}<small class="kiosk-sub">${escapeHtml(act.reason)}</small></span>
-      <span class="kiosk-done">${escapeHtml(act.status)}</span>
-    </div>`;
-
   // Several names and none picked: Enter does nothing, so say what to do instead.
   function setHints(matchCount, pressText) {
     const several = query.trim() && open.length > 1 && !open[highlight];
@@ -122,38 +116,79 @@ export function renderCheckin(el) {
 
   // ----- Restroom tab -----
   // What a student can do right now. kind is null when all they can do is wait their turn.
+  // queueId is set while they are on the waitlist, so "Leave waitlist" knows which place to remove.
   function restroomAction(student, sum, at) {
     if (sum.active.some((t) => t.studentId === student.id)) return { kind: 'return', label: 'I’m back' };
     const reason = departureEligibility(cls.id, todayFor(cls), student.id, at);
     const place = sum.queue.findIndex((q) => q.studentId === student.id);
-    if (place >= 0) return reason ? { kind: null, status: `Waiting · #${place + 1}`, reason } : { kind: 'go', label: 'Go now' };
+    if (place >= 0) {
+      const waiting = { place: place + 1, queueId: sum.queue[place].id };
+      return reason ? { kind: null, reason, ...waiting } : { kind: 'go', label: 'Go now', ...waiting };
+    }
     return { kind: 'request', label: reason ? 'Join waitlist' : 'Go to restroom', reason };
   }
 
+  const nameOf = (studentId) => cls.students.find((s) => s.id === studentId)?.name ?? 'Removed student';
+
+  // The right side, top to bottom: sessions (who is out), the waitlist, then everyone else.
+  // Students who are out come back from their Session card, so they are not in the name list.
   function restroomRows() {
     const at = nowFor(cls.id);
     const sum = restroomSummary(cls.id, todayFor(cls), at);
-    const rows = sortedStudents(cls)
+    const all = sortedStudents(cls)
       .filter((s) => matchesSearch(s.name, query))
       .map((student) => ({ student, act: restroomAction(student, sum, at) }));
-    const sig = JSON.stringify([sum.active.length, sum.queue.length, rows.map((r) => [r.student.id, r.act.kind, r.act.label ?? r.act.status, r.act.reason])]);
-    return { sum, rows, sig };
+    const waitlist = all.filter((r) => r.act.place).sort((a, b) => a.act.place - b.act.place);
+    const names = all.filter((r) => !r.act.place && r.act.kind !== 'return');
+    // A session lasts from leaving to coming back. With nobody out, the last finished trip stays so its times can be read.
+    const last = sum.completed.reduce((a, t) => (!a || t.returnedAt > a.returnedAt ? t : a), null);
+    const sessions = sum.active.length ? sum.active : last ? [last] : [];
+    const sig = JSON.stringify([
+      sum.active.length, sum.queue.length, sessions.map((t) => [t.id, t.returnedAt]),
+      all.map((r) => [r.student.id, r.act.kind, r.act.label, r.act.place, r.act.reason]),
+    ]);
+    return { sum, all, waitlist, names, sessions, sig };
   }
 
+  const sessionCard = (t) => `
+    <div class="kiosk-session">
+      <div class="kiosk-session-info">
+        <p class="kiosk-session-title">${t.returnedAt == null ? 'Session' : 'Last session'}</p>
+        <p class="kiosk-session-name">${escapeHtml(nameOf(t.studentId))}</p>
+        <p class="kiosk-session-sub">Time out: ${time12(t.departedAt)}</p>
+        <p class="kiosk-session-sub">Time in: ${t.returnedAt == null ? '—' : time12(t.returnedAt)}</p>
+        <div class="stopwatch" data-trip="${t.id}" role="timer" aria-label="Time out for this trip"></div>
+      </div>
+      ${t.returnedAt == null ? `<button class="btn-primary" data-return="${t.studentId}">I’m back</button>` : ''}
+    </div>`;
+
   function renderRestroom() {
-    const { sum, rows, sig } = restroomRows();
+    const { sum, all, waitlist, names, sessions, sig } = restroomRows();
     restroomSig = sig;
     el.querySelector('#count').textContent = `Out: ${sum.active.length} · Waiting: ${sum.queue.length}`;
     showRule();
-    open = rows.filter((r) => r.act.kind);
-    const waiting = rows.filter((r) => !r.act.kind);
+    // Enter and the highlight move through what can be pressed: whose turn it is, then the names.
+    open = [...waitlist.filter((r) => r.act.kind), ...names.filter((r) => r.act.kind)];
     highlight = Math.min(highlight, open.length - 1);
     goEl.textContent = target()?.act.label ?? 'Go to restroom';
     goEl.disabled = !target();
-    setHints(rows.length, (t) => `Press Enter: ${t.act.label} (${t.student.name}).`);
-    listEl.innerHTML = rows.length
-      ? open.map(row).join('') + waiting.map(waitingRow).join('')
-      : `<p class="kiosk-empty">No names match “${escapeHtml(query)}”.</p>`;
+    setHints(all.length, (t) => `Press Enter: ${t.act.label} (${t.student.name}).`);
+
+    const waitRow = (r) => `
+      <div class="kiosk-row wait${open.indexOf(r) === highlight && highlight >= 0 ? ' highlight' : ''}">
+        <span class="kiosk-name">${escapeHtml(r.student.name)}<small class="kiosk-sub">#${r.act.place} · ${r.act.kind ? 'Your turn' : escapeHtml(r.act.reason)}</small></span>
+        ${r.act.kind ? `<button class="btn-primary" data-id="${r.student.id}">Go now</button>` : ''}
+        <button class="btn-gray" data-leave="${r.act.queueId}" aria-label="Leave waitlist: ${escapeHtml(r.student.name)}">Leave waitlist</button>
+      </div>`;
+    const nameRow = (r) => row(r, open.indexOf(r));
+    const heading = (text) => `<h2 class="kiosk-list-title">${text}</h2>`;
+    const above = sessions.length || waitlist.length;
+
+    listEl.innerHTML = sessions.map(sessionCard).join('')
+      + (waitlist.length ? heading('Waitlist') + waitlist.map(waitRow).join('') : '')
+      + (names.length ? (above ? heading('Class list') : '') + names.map(nameRow).join('') : '')
+      + (all.length ? '' : `<p class="kiosk-empty">No names match “${escapeHtml(query)}”.</p>`);
+    tickSessions(sessions);
     listEl.querySelector('.highlight')?.scrollIntoView({ block: 'nearest' });
   }
 
@@ -164,12 +199,23 @@ export function renderCheckin(el) {
     if (mode === 'restroom') ruleEl.textContent = ruleText(cls, todayFor(cls), nowFor(cls.id));
   }
 
+  // The running timers count up in place, without redrawing the cards.
+  function tickSessions(sessions) {
+    const at = nowFor(cls.id);
+    sessions.forEach((t) => {
+      const n = listEl.querySelector(`[data-trip="${t.id}"]`);
+      if (n) n.textContent = duration((t.returnedAt ?? at) - t.departedAt);
+    });
+  }
+
   // Trips can open or a slot can free up with nobody touching the screen, so check every second.
   // Redrawing only when something changed keeps a tap from landing on a list that just rebuilt.
   function refreshRestroom() {
     if (!cls || mode !== 'restroom') return;
     showRule();
-    if (restroomRows().sig !== restroomSig) render();
+    const { sessions, sig } = restroomRows();
+    if (sig !== restroomSig) render();
+    else tickSessions(sessions);
   }
 
   function setQuery(value) {
@@ -220,24 +266,11 @@ export function renderCheckin(el) {
     searchEl.focus();
   }
 
-  // A notice like the check-in one, without "Not you?": a restroom trip has no undo.
-  function showNotice(student, message) {
-    undo = null;
-    undoEl.innerHTML = `
-      <span class="kiosk-undo-mark">${icon('check')}</span>
-      <span class="kiosk-undo-label"><span>${escapeHtml(message)}</span></span>
-      <strong class="kiosk-undo-name">${escapeHtml(student.name)}</strong>
-      <div class="kiosk-undo-actions">
-        <button class="kiosk-undo-close" id="undo-close" aria-label="Close">${icon('close')}</button>
-      </div>
-      <span class="kiosk-undo-bar" aria-hidden="true"></span>`;
-    undoEl.hidden = false;
-  }
-
+  // No notice here: the list changing is the answer (a name joins the waitlist, a Session card starts or ends).
+  // Screen readers still get the result.
   function doRestroom({ student, act }) {
     const run = { return: markReturned, go: markOut, request: requestRestroom }[act.kind];
     const { message } = run(cls.id, todayFor(cls), student.id);
-    showNotice(student, message);
     setQuery('');
     liveEl.textContent = `${student.name}: ${message}`;
     searchEl.focus();
@@ -248,6 +281,14 @@ export function renderCheckin(el) {
   goEl.addEventListener('click', () => { const t = target(); if (t) activate(t); });
 
   listEl.addEventListener('click', (e) => {
+    const back = e.target.closest('[data-return]')?.dataset.return;
+    if (back) return doRestroom({ student: cls.students.find((s) => s.id === back), act: { kind: 'return' } });
+    const leave = e.target.closest('[data-leave]')?.dataset.leave;
+    if (leave) {
+      cancelRequest(leave);
+      liveEl.textContent = 'Left the waitlist';
+      return render();
+    }
     const id = e.target.closest('[data-id]')?.dataset.id;
     const r = id && open.find((o) => o.student.id === id);
     if (r) activate(r);

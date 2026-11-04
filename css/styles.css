@@ -485,6 +485,19 @@ button:disabled { cursor: not-allowed; }
 .kiosk-search:focus-within { border-color: var(--info); box-shadow: 0 0 0 4px var(--info-soft); }
 .kiosk-entry .btn-xl { height: 60px; font-size: 20px; }
 .kiosk-help { margin: 0; color: var(--muted); font-size: 16px; }
+.kiosk-session { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; padding: 16px 20px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); }
+.kiosk-session-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.kiosk-session p { margin: 0; }
+.kiosk-session-title { color: var(--muted); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.kiosk-session-name { font-size: 22px; font-weight: 700; overflow-wrap: anywhere; }
+.kiosk-session-sub { color: var(--text-2); font-size: 16px; font-variant-numeric: tabular-nums; }
+.kiosk-session .stopwatch { margin-top: 4px; font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.1; }
+.kiosk-session .btn-primary { height: 44px; padding: 0 22px; font-size: 16px; flex: none; }
+.kiosk-list-title { margin: 14px 0 6px; color: var(--muted); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.kiosk-session + .kiosk-list-title, .kiosk-list-title:first-child { margin-top: 0; }
+/* Leave waitlist: quiet gray, so it doesn't compete with Go now. */
+.btn-gray { flex: none; height: 44px; padding: 0 18px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-2); font-size: 16px; font-weight: 600; }
+.btn-gray:hover { background: var(--border); }
 .kiosk-undo {
   position: relative;
   display: grid;
@@ -589,6 +602,8 @@ button:disabled { cursor: not-allowed; }
   .kiosk-list { overflow: visible; padding: 12px 16px; }
   .kiosk-name { font-size: 17px; }
   .kiosk-row { flex-wrap: wrap; gap: 4px 12px; }
+  /* Name on its own line, so Go now and Leave waitlist beside it don't squeeze it. */
+  .kiosk-row.wait .kiosk-name { flex: 1 0 100%; }
 }
 
 .pin-modal .modal-text { margin-bottom: 16px; }
