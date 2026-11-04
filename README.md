@@ -140,3 +140,29 @@ There is no build or bundling step.
 - `js/views/schedule.js`, `js/views/classes.js`, `js/views/settings.js`: schedule, roster and school configuration.
 - `js/views/checkin.js`: existing kiosk with dedicated scanner fallback.
 - `css/styles.css`: existing design tokens with responsive session/print layouts.
+
+## Deploy a separate copy to your Vercel account
+
+`vercel.json` builds a static `public/` directory containing only `index.html`, CSS and JavaScript.
+No runtime functions, backend credentials or paid features are required for this static deployment.
+Vercel Hobby's current account and usage restrictions still apply.
+
+To deploy independently of the repository owner's Vercel project, use the Vercel CLI and select your
+own personal account when linking a **new** project. Do not select an existing project belonging to
+another account. A direct CLI upload does not require merging into the repository's main branch or
+connecting the owner's Git integration.
+
+```sh
+git switch codex/classroom-attendance-restroom-workflow
+npx vercel login
+npx vercel --prod
+```
+
+In the prompts, choose your personal Hobby scope, create a new project, and use the current directory.
+The committed configuration supplies the build/output settings. Keep `.vercel/` private and untracked;
+it contains the local project link. Generated `public/` assets are also ignored.
+
+A deployment on a new hostname has its own browser localStorage. Existing attendance data does not
+move automatically to that hostname. This app has no server-side synchronization. Export important
+attendance records from the old site before moving to the new site; CSV exports are reports, not a
+full-fidelity data migration/import mechanism.
