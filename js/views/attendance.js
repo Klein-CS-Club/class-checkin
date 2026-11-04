@@ -1,8 +1,8 @@
 import { icon } from '../icons.js';
-import { subscribe, classById, currentClass, dayRows, bellFor, setOverride, markRestPresent, startKiosk, STATUSES } from '../store.js';
-import { escapeHtml, todayKey, addDays, dayLabel, time12 } from '../format.js';
+import { subscribe, classById, currentClass, dayRows, bellFor, startTimeFor, setDayStart, setOverride, markRestPresent, startKiosk, STATUSES } from '../store.js';
+import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../format.js';
 import { toCsv, downloadCsv } from '../csv.js';
-import { confirmDialog } from '../modal.js';
+import { confirmDialog, openModal } from '../modal.js';
 
 let date = todayKey();
 
@@ -59,7 +59,8 @@ export function renderAttendance(el) {
       <section class="panel att-panel">
         <div class="panel-head">
           <h2>${escapeHtml(dayLabel(date))}${isToday ? ' · Today' : ''}</h2>
-          <span class="stat-sub">Late after ${escapeHtml(time12(bellFor(cls, date).cutoffAt))}</span>
+          <span class="stat-sub">Starts ${escapeHtml(timeLabel(startTimeFor(cls, date)))}${cls.dayStarts?.[date] ? ' (changed for this day)' : ''} · Late after ${escapeHtml(time12(bellFor(cls, date).cutoffAt))}</span>
+          <button class="btn-link" id="day-start">Change start time</button>
           <span class="spacer"></span>
           <button class="btn-link" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
         </div>
@@ -102,6 +103,8 @@ export function renderAttendance(el) {
         confirmLabel: 'Mark present',
       });
       if (ok) markRestPresent(currentClass().id, date);
+    } else if (t.id === 'day-start') {
+      dayStartDialog(currentClass(), date);
     } else if (t.id === 'export') {
       exportDay(currentClass().id, date);
     } else if (t.id === 'kiosk') {
@@ -115,6 +118,50 @@ export function renderAttendance(el) {
 
   render();
   return subscribe(render);
+}
+
+// A different start time for one date, such as an assembly or a shortened day.
+function dayStartDialog(cls, date) {
+  const changed = !!cls.dayStarts?.[date];
+  openModal({
+    title: `Start time for ${dayLabel(date)}`,
+    className: 'modal-sm',
+    render(body, close) {
+      body.innerHTML = `
+        <form class="form" novalidate>
+          <label class="field">
+            <span>Start time</span>
+            <input name="time" type="time" value="${startTimeFor(cls, date)}" autofocus>
+          </label>
+          <p class="hint">Only for this day. The usual start time is ${escapeHtml(timeLabel(cls.startTime))},
+            and arrivals more than ${cls.lateMinutes} min after the start still count as late.</p>
+          <p class="field-error" hidden></p>
+          <div class="modal-actions">
+            ${changed ? '<button type="button" class="btn-link" data-a="usual">Use usual time</button>' : ''}
+            <span class="spacer"></span>
+            <button type="button" class="btn-secondary" data-a="cancel">Cancel</button>
+            <button type="submit" class="btn-primary">Save</button>
+          </div>
+        </form>`;
+      const form = body.querySelector('form');
+      const errorEl = form.querySelector('.field-error');
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        errorEl.hidden = !!form.time.value;
+        errorEl.textContent = 'Pick a start time.';
+        if (!form.time.value) return;
+        setDayStart(cls.id, date, form.time.value === cls.startTime ? null : form.time.value);
+        close();
+      });
+
+      body.addEventListener('click', (e) => {
+        const a = e.target.closest('[data-a]')?.dataset.a;
+        if (a === 'cancel') close();
+        if (a === 'usual') { setDayStart(cls.id, date, null); close(); }
+      });
+    },
+  });
 }
 
 function exportDay(id, day) {

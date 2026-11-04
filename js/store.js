@@ -163,6 +163,14 @@ const overrideKey = (classId, date, studentId) => `${classId}|${date}|${studentI
 // A class starts at its usual start time unless that one date has its own.
 export const startTimeFor = (cls, date) => cls.dayStarts?.[date] ?? cls.startTime;
 
+// A time puts that one date on its own start time; null puts it back on the usual one.
+export function setDayStart(classId, date, time) {
+  const dayStarts = { ...classById(classId).dayStarts };
+  if (time) dayStarts[date] = time;
+  else delete dayStarts[date];
+  updateClass(classId, { dayStarts });
+}
+
 // When the class starts and when arrivals turn late, as timestamps.
 export function bellFor(cls, date) {
   const startAt = atTime(date, startTimeFor(cls, date));
