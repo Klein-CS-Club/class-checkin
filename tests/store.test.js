@@ -94,12 +94,30 @@ test('with no absent cutoff, a late arrival stays late however late it is', () =
   assert.equal(status(ann), 'late');
 });
 
-test('late and absent minutes are checked', () => {
-  assert.equal(store.bellProblem(5, null), '');
-  assert.equal(store.bellProblem(5, 15), '');
-  assert.match(store.bellProblem(61, null), /0 to 60/);
-  assert.match(store.bellProblem(5, 5), /more than Late after/);
-  assert.match(store.bellProblem(5, 2.5), /whole number/);
+test('late, absent and end times are checked', () => {
+  const ok = { startTime: '08:00', lateMinutes: 5 };
+  assert.equal(store.bellProblem({ ...ok, absentMinutes: null }), '');
+  assert.equal(store.bellProblem({ ...ok, absentMinutes: 15, endTime: '08:50' }), '');
+  assert.match(store.bellProblem({ ...ok, lateMinutes: 61 }), /0 to 60/);
+  assert.match(store.bellProblem({ ...ok, absentMinutes: 5 }), /more than Late after/);
+  assert.match(store.bellProblem({ ...ok, absentMinutes: 2.5 }), /whole number/);
+  assert.match(store.bellProblem({ ...ok, endTime: '07:59' }), /end time must be after/);
+});
+
+test('a class can have an end time, and one day can have its own', () => {
+  const cls = () => store.classById(classId);
+  assert.equal(store.bellFor(cls(), day).endAt, null);
+  store.updateClass(classId, { endTime: '08:50' });
+  assert.equal(store.bellFor(cls(), day).endAt, atTime(day, '08:50'));
+  store.setDaySchedule(classId, day, { startTime: '08:00', endTime: '09:30', lateMinutes: 5, absentMinutes: null });
+  assert.equal(store.bellFor(cls(), day).endAt, atTime(day, '09:30'));
+  assert.equal(cls().endTime, '08:50'); // the usual end time is untouched
+});
+
+test('a day entry without an end time has none', () => {
+  store.setDaySchedule(classId, day, { startTime: '08:00', lateMinutes: 5 });
+  assert.deepEqual(
+    store.scheduleFor(store.classById(classId), day), { startTime: '08:00', endTime: null, lateMinutes: 5, absentMinutes: null });
 });
 
 // ---------- Finalizing ----------
@@ -150,7 +168,8 @@ test('a backup with start-time-only day changes keeps those days, with the class
   });
   store.restoreBackup(store.readBackup(earlier));
   const cls = store.classById('c');
-  assert.deepEqual(store.scheduleFor(cls, '2026-11-02'), { startTime: '09:30', lateMinutes: 5, absentMinutes: null });
+  assert.deepEqual(
+    store.scheduleFor(cls, '2026-11-02'), { startTime: '09:30', endTime: null, lateMinutes: 5, absentMinutes: null });
   assert.equal(cls.dayStarts, undefined);
   assert.equal(cls.absentMinutes, null);
 });

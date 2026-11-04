@@ -12,13 +12,14 @@ let date = todayKey();
 
 const SEG = [['present', 'P'], ['late', 'L'], ['absent', 'A']];
 
-// "Starts 8:00 AM · Late after 8:05 AM · Absent after 8:15 AM", noting when the day was changed.
+// "Starts 8:00 AM · Ends 8:50 AM · Late after 8:05 AM · Absent after 8:15 AM", noting when the day was changed.
 function bellSummary(cls, date) {
-  const { startTime } = scheduleFor(cls, date);
+  const { startTime, endTime } = scheduleFor(cls, date);
   const { cutoffAt, absentAt } = bellFor(cls, date);
   const changed = cls.days?.[date] ? ' (changed for this day)' : '';
+  const ends = endTime ? ` · Ends ${timeLabel(endTime)}` : '';
   const absent = absentAt === null ? '' : ` · Absent after ${time12(absentAt)}`;
-  return `Starts ${timeLabel(startTime)}${changed} · Late after ${time12(cutoffAt)}${absent}`;
+  return `Starts ${timeLabel(startTime)}${changed}${ends} · Late after ${time12(cutoffAt)}${absent}`;
 }
 
 export function renderAttendance(el) {
@@ -146,7 +147,7 @@ export function renderAttendance(el) {
 
 // Different times for one date, such as an assembly or a shortened day.
 function dayTimesDialog(cls, date) {
-  const usual = { startTime: cls.startTime, lateMinutes: cls.lateMinutes, absentMinutes: cls.absentMinutes ?? null };
+  const usual = { startTime: cls.startTime, endTime: cls.endTime ?? null, lateMinutes: cls.lateMinutes, absentMinutes: cls.absentMinutes ?? null };
   const now = scheduleFor(cls, date);
   const changed = !!cls.days?.[date];
   openModal({
@@ -161,6 +162,11 @@ function dayTimesDialog(cls, date) {
           </label>
           <p class="hint" id="time-hint"></p>
           <label class="field">
+            <span>End time (optional)</span>
+            <input name="end" type="text" autocomplete="off" placeholder="8:50 AM" value="${now.endTime ? escapeHtml(timeLabel(now.endTime)) : ''}">
+          </label>
+          <p class="hint" id="end-hint"></p>
+          <label class="field">
             <span>Late after (minutes)</span>
             <input name="late" type="number" min="0" max="60" step="1" inputmode="numeric" value="${now.lateMinutes}">
           </label>
@@ -168,7 +174,7 @@ function dayTimesDialog(cls, date) {
             <span>Absent after (minutes, optional)</span>
             <input name="absent" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="Never" value="${now.absentMinutes ?? ''}">
           </label>
-          <p class="hint">Only for this day. The usual times are ${escapeHtml(timeLabel(usual.startTime))}, late after ${usual.lateMinutes} min${usual.absentMinutes ? `, absent after ${usual.absentMinutes} min` : ''}.</p>
+          <p class="hint">Only for this day. The usual times are ${escapeHtml(timeLabel(usual.startTime))}${usual.endTime ? `–${escapeHtml(timeLabel(usual.endTime))}` : ''}, late after ${usual.lateMinutes} min${usual.absentMinutes ? `, absent after ${usual.absentMinutes} min` : ''}.</p>
           <p class="field-error" hidden></p>
           <div class="modal-actions">
             ${changed ? '<button type="button" class="btn-link" data-a="usual">Use usual times</button>' : ''}
@@ -180,6 +186,7 @@ function dayTimesDialog(cls, date) {
       const form = body.querySelector('form');
       const errorEl = form.querySelector('.field-error');
       showTimeHint(form.time, form.querySelector('#time-hint'));
+      showTimeHint(form.end, form.querySelector('#end-hint'), { label: 'Ends at', optional: true });
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -187,12 +194,17 @@ function dayTimesDialog(cls, date) {
         const lateMinutes = Number(form.late.value);
         const absentText = form.absent.value.trim();
         const absentMinutes = absentText === '' ? null : Number(absentText);
-        const error = !startTime ? 'Type a start time like 8:00 AM.' : bellProblem(lateMinutes, absentMinutes);
+        const endText = form.end.value.trim();
+        const endTime = endText === '' ? null : parseTime(endText);
+        const error = !startTime ? 'Type a start time like 8:00 AM.'
+          : endText !== '' && !endTime ? 'Type an end time like 8:50 AM, or leave it empty.'
+          : bellProblem({ startTime, endTime, lateMinutes, absentMinutes });
         errorEl.textContent = error;
         errorEl.hidden = !error;
         if (error) return;
-        const same = startTime === usual.startTime && lateMinutes === usual.lateMinutes && absentMinutes === usual.absentMinutes;
-        setDaySchedule(cls.id, date, same ? null : { startTime, lateMinutes, absentMinutes });
+        const same = startTime === usual.startTime && endTime === usual.endTime
+          && lateMinutes === usual.lateMinutes && absentMinutes === usual.absentMinutes;
+        setDaySchedule(cls.id, date, same ? null : { startTime, endTime, lateMinutes, absentMinutes });
         close();
       });
 
