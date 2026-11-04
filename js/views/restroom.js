@@ -119,8 +119,8 @@ export function restroomHtml(cls, date) {
     <p class="hint" id="r-rule">${escapeHtml(ruleText(cls, date, at))}</p>
     <p class="hint" role="status">${escapeHtml(notice)}</p>
     <div class="restroom-grid">
-      <div class="restroom-col">${outPanel + waitPanel}</div>
-      <div class="restroom-col">${studentsPanel + donePanel}</div>
+      <div class="restroom-col">${outPanel + waitPanel + donePanel}</div>
+      <div class="restroom-col">${studentsPanel}</div>
     </div>`;
 }
 
