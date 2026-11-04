@@ -45,13 +45,13 @@ export function mountSidebar() {
 
   toggle.addEventListener('click', () => setSidebarExpanded(!getState().settings.sidebarExpanded));
 
-  // Picking a period opens its attendance.
+  // Picking a period opens its attendance, or stays on the Restroom tab if that's where you are.
   periodsEl.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
     if (btn.hasAttribute('data-add')) return classDialog();
     selectClass(btn.dataset.class);
-    location.hash = '#/attendance';
+    location.hash = location.hash === '#/restroom' ? '#/restroom' : '#/attendance';
   });
 
   narrowQuery.addEventListener('change', renderLayout);

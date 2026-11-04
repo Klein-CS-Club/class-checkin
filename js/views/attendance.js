@@ -1,18 +1,20 @@
 import { icon } from '../icons.js';
 import {
   subscribe, classById, currentClass, dayRows, bellFor, scheduleFor, setDaySchedule, bellProblem, setOverride, markRestPresent,
-  isFinalized, finalizeAttendance, undoFinalize, startKiosk, STATUSES,
+  isFinalized, finalizeAttendance, undoFinalize, restroomSummary, todayFor, nowFor, setDemoClock, resetDemo,
+  startKiosk, STATUSES,
 } from '../store.js';
-import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel, parseTime } from '../format.js';
+import { escapeHtml, todayKey, addDays, dayLabel, atTime, hhmm, time12, timeLabel, parseTime } from '../format.js';
 import { showTimeHint } from './timeinput.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
+import { restroomHtml, refreshRestroomLive, handleRestroomClick, clearRestroomNotice } from './restroom.js';
 
 let date = todayKey();
 
 const SEG = [['present', 'P'], ['late', 'L'], ['absent', 'A']];
 
-// "Starts 8:00 AM · Ends 8:50 AM · Late after 8:05 AM · Absent after 8:15 AM", noting when the day was changed.
+// "Starts 8:00 AM · Late after 8:05 AM · Absent after 8:15 AM", noting when the day was changed.
 function bellSummary(cls, date) {
   const { startTime, endTime } = scheduleFor(cls, date);
   const { cutoffAt, absentAt } = bellFor(cls, date);
@@ -22,12 +24,47 @@ function bellSummary(cls, date) {
   return `Starts ${timeLabel(startTime)}${changed}${ends} · Late after ${time12(cutoffAt)}${absent}`;
 }
 
+// The Attendance and Restroom tabs share the class and date picked in the sidebar and header.
+function tabsHtml(cls, restroom) {
+  const { active, queue } = restroomSummary(cls.id, date);
+  const tab = (href, label, on) => `<a class="tab" href="${href}"${on ? ' aria-current="page"' : ''}>${label}</a>`;
+  return `
+    <nav class="tabs" aria-label="Class view">
+      ${tab('#/attendance', 'Attendance', !restroom)}
+      ${tab('#/restroom', 'Restroom', restroom)}
+      <span class="tabs-brief">Out: ${active.length} · Waiting: ${queue.length}</span>
+    </nav>`;
+}
+
+const DEMO_TIMES = ['13:59', '14:00', '14:05', '14:06', '14:10', '14:15', '14:50', '15:00'];
+
+// Period 7 demo only: its clock starts at the time you press and keeps running.
+function demoHtml(cls) {
+  if (!cls.demo) return '';
+  const now = nowFor(cls.id);
+  return `
+    <section class="panel demo-controls">
+      <div class="panel-head"><h2>Demo clock</h2><span class="stat-sub">Period 7 is made up. Its clock starts where you set it and keeps running.</span></div>
+      <div class="panel-body demo-row">
+        <strong class="tabular" id="demo-now">${escapeHtml(time12(now))}</strong>
+        ${DEMO_TIMES.map((t) => `<button class="btn-secondary" data-demo-time="${t}">${escapeHtml(timeLabel(t))}</button>`).join('')}
+        <input type="time" id="demo-time" value="${hhmm(now)}" aria-label="Other demo time">
+        <button class="btn-secondary" data-demo-time="other">Set</button>
+        <span class="spacer"></span>
+        <button class="btn-link" data-demo-reset>Reset demo</button>
+      </div>
+      <p class="field-error demo-error" id="demo-error" hidden></p>
+    </section>`;
+}
+
 export function renderAttendance(el) {
+  const restroom = location.hash === '#/restroom';
+  clearRestroomNotice();
   el.innerHTML = `
     <div class="page">
       <header class="page-head">
         <div class="page-title">
-          <small>Attendance</small>
+          <small id="eyebrow">Attendance</small>
           <h1 id="title">Attendance</h1>
         </div>
         <span class="spacer"></span>
@@ -50,6 +87,8 @@ export function renderAttendance(el) {
     const cls = currentClass();
     el.querySelector('#title').textContent = cls?.name ?? 'Attendance';
     dateEl.value = date;
+    el.querySelector('#eyebrow').textContent = restroom ? 'Restroom' : 'Attendance';
+    el.querySelector('#export').hidden = restroom;
     el.querySelector('#export').disabled = !cls;
     el.querySelector('#kiosk').disabled = !cls;
     if (!cls) {
@@ -59,10 +98,16 @@ export function renderAttendance(el) {
         </div></section>`;
       return;
     }
+    const tabs = tabsHtml(cls, restroom) + demoHtml(cls);
+    if (restroom) {
+      bodyEl.innerHTML = tabs + restroomHtml(cls, date);
+      refreshRestroomLive(bodyEl, cls, date);
+      return;
+    }
     const rows = dayRows(cls.id, date);
     const count = (s) => rows.filter((r) => r.status === s).length;
-    const isToday = date === todayKey();
-    bodyEl.innerHTML = `
+    const isToday = date === todayFor(cls);
+    bodyEl.innerHTML = tabs + `
       <div class="stats-row">
         ${['present', 'late', 'absent', 'notyet'].map((s) => `
           <div class="stat-card">
@@ -107,6 +152,28 @@ export function renderAttendance(el) {
   el.querySelector('.page').addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if (!t) return;
+    if (handleRestroomClick(t, currentClass(), date, render)) return;
+    if (t.dataset.demoTime) {
+      const cls = currentClass();
+      const time = t.dataset.demoTime === 'other' ? el.querySelector('#demo-time').value : t.dataset.demoTime;
+      const message = time ? setDemoClock(atTime(todayFor(cls), time)) : 'Pick a time.';
+      const errorEl = el.querySelector('#demo-error');
+      errorEl.textContent = message;
+      errorEl.hidden = !message;
+      return;
+    }
+    if (t.hasAttribute('data-demo-reset')) {
+      const ok = await confirmDialog({
+        title: 'Reset the Period 7 demo?',
+        message: 'Only the demo class’s check-ins and restroom trips are removed. Your real classes are not touched.',
+        confirmLabel: 'Reset demo',
+      });
+      if (ok) {
+        clearRestroomNotice();
+        resetDemo();
+      }
+      return;
+    }
     if (t.dataset.step) {
       date = addDays(date, Number(t.dataset.step));
       render();
@@ -142,7 +209,15 @@ export function renderAttendance(el) {
   });
 
   render();
-  return subscribe(render);
+  const unsubscribe = subscribe(render);
+  // Keeps the restroom timers and button states current between changes.
+  const timer = setInterval(() => {
+    const cls = currentClass();
+    if (restroom && cls) refreshRestroomLive(bodyEl, cls, date);
+    const shown = el.querySelector('#demo-now');
+    if (shown && cls) shown.textContent = time12(nowFor(cls.id));
+  }, 1000);
+  return () => { unsubscribe(); clearInterval(timer); };
 }
 
 // Different times for one date, such as an assembly or a shortened day.
