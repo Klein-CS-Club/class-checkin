@@ -1,5 +1,8 @@
 import { icon } from '../icons.js';
-import { subscribe, classById, currentClass, dayRows, bellFor, startTimeFor, setDayStart, setOverride, markRestPresent, startKiosk, STATUSES } from '../store.js';
+import {
+  subscribe, classById, currentClass, dayRows, bellFor, startTimeFor, setDayStart, setOverride, markRestPresent,
+  isFinalized, finalizeAttendance, undoFinalize, startKiosk, STATUSES,
+} from '../store.js';
 import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../format.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
@@ -62,7 +65,8 @@ export function renderAttendance(el) {
           <span class="stat-sub">Starts ${escapeHtml(timeLabel(startTimeFor(cls, date)))}${cls.dayStarts?.[date] ? ' (changed for this day)' : ''} · Late after ${escapeHtml(time12(bellFor(cls, date).cutoffAt))}</span>
           <button class="btn-link" id="day-start">Change start time</button>
           <span class="spacer"></span>
-          <button class="btn-link" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
+          <button class="btn-secondary" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
+          ${isToday ? `<button class="btn-secondary" id="finalize">${isFinalized(cls.id, date) ? 'Undo finalization' : 'Finalize attendance'}</button>` : ''}
         </div>
         ${rows.length ? `
           <table class="table">
@@ -104,6 +108,15 @@ export function renderAttendance(el) {
         confirmLabel: 'Mark present',
       });
       if (ok) markRestPresent(currentClass().id, date);
+    } else if (t.id === 'finalize') {
+      const cls = currentClass();
+      if (isFinalized(cls.id, date)) return undoFinalize(cls.id, date);
+      const ok = await confirmDialog({
+        title: 'Finalize attendance?',
+        message: 'Everyone who hasn’t checked in will be marked Absent. Check-ins and edits stay as they are, and you can undo this.',
+        confirmLabel: 'Mark absent',
+      });
+      if (ok) finalizeAttendance(cls.id, date);
     } else if (t.id === 'day-start') {
       dayStartDialog(currentClass(), date);
     } else if (t.id === 'export') {
