@@ -44,7 +44,7 @@ The first run loads three demo classes with made-up names and a week of history.
   after 8:05 AM · Absent after 8:15 AM". **Finalize attendance** (today only) marks everyone who hasn't
   checked in as **Absent**, and can be undone. Days that are over count as Absent without finalizing.
   Tap P / L / A to override a status. **Edited · Undo** puts it back to automatic. **Mark rest present**
-  fills in everyone who is absent or not yet in. **Change times** sets a different start time, end time,
+  fills in everyone who is absent or not yet in. **Change today's times** sets a different start time, end time,
   late-after and absent-after for just that day (an assembly, a short day), and **Use usual times** puts
   them back.
 - **Export CSV** downloads the day you're looking at: Date, Class, Student, Status, Check-in time, Minutes late.
