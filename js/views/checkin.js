@@ -157,8 +157,8 @@ export function renderCheckin(el) {
         <p class="kiosk-session-name">${escapeHtml(nameOf(t.studentId))}</p>
         <p class="kiosk-session-sub">Time out: ${time12(t.departedAt)}</p>
         <p class="kiosk-session-sub">Time in: ${t.returnedAt == null ? '—' : time12(t.returnedAt)}</p>
-        <div class="stopwatch" data-trip="${t.id}" role="timer" aria-label="Time out for this trip"></div>
       </div>
+      <div class="stopwatch" data-trip="${t.id}" role="timer" aria-label="Time out for this trip"></div>
       ${t.returnedAt == null ? `<button class="btn-primary" data-return="${t.studentId}">I’m back</button>` : ''}
     </div>`;
 
