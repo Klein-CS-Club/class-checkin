@@ -31,17 +31,22 @@ The first run loads three demo classes with made-up names and a week of history.
   today ("14/18"). Picking a period opens its attendance, and **Add class** adds one. The sidebar
   button at the top collapses it to a 64px icon rail (periods show as number tiles) and opens it
   again; the choice is remembered. Phones always get the rail.
-- **Classes** (`#/classes`): add a class with a **start time** and **late after (minutes)**, then add
-  students. You can paste names one per line, type a single name, or import a CSV. "Last, First" is
-  flipped to "First Last", and names already on the roster are skipped. Times use the device's clock.
+- **Classes** (`#/classes`): add a class with a **start time**, **late after (minutes)** and an optional
+  **absent after (minutes)**, then add students. The start time is a plain text box: `8`, `8:05`,
+  `2:30pm` and `14:30` all work, and a line under the box shows how it was read (with no am or pm, 7 to
+  11 mean morning and 1 to 6 mean afternoon). You can paste names one per line, type a single name, or
+  import a CSV. "Last, First" is flipped to "First Last", and names already on the roster are skipped.
+  Times use the device's clock.
 - **Attendance** (`#/attendance`): shows the period picked in the sidebar. Step through days with ‹ ›. Statuses are worked out from check-in times:
-  **Present** at or before the late cutoff (start time plus the late-after minutes), **Late** after it, and
+  **Present** at or before the late cutoff (start time plus the late-after minutes), **Late** after it,
+  **Absent** after the absent cutoff if the class has one (the check-in time is still kept), and
   **Not yet** for everyone who hasn't checked in. **Minutes late** counts whole minutes after the start
-  time, rounded up. **Finalize attendance** (today only) marks everyone who hasn't checked in as
+  time, rounded up. The heading shows the day's times, such as "Starts 8:00 AM · Late after 8:05 AM ·
+  Absent after 8:15 AM". **Finalize attendance** (today only) marks everyone who hasn't checked in as
   **Absent**, and can be undone. Days that are over count as Absent without finalizing. Tap P / L / A to
   override a status. **Edited · Undo** puts it back to automatic. **Mark rest present** fills in everyone
-  who is absent or not yet in. **Change start time** sets a different start for just that day (an
-  assembly, a short day); the late cutoff moves with it, and **Use usual time** puts it back.
+  who is absent or not yet in. **Change times** sets a different start time, late-after and absent-after
+  for just that day (an assembly, a short day), and **Use usual times** puts them back.
 - **Restroom** (`#/restroom`): the second tab of the same page, using the same class and date. It shows
   who is **Out now**, who is **Waiting**, and running totals (trips, students, time out), then a list of
   students with **Send out** or **Add to waitlist**, and the completed trips. A student can leave once
@@ -80,7 +85,7 @@ The first run loads three demo classes with made-up names and a week of history.
   It always uses 1 student at a time and a 10-minute opening block, and **Reset demo** removes only its
   own records.
 - **Upgrading**: older saves had one "late after" time per class. It becomes the start time with 0 late
-  minutes, so every old check-in keeps its status, and a copy of the original data is kept under
+  minutes and no absent cutoff, so every old check-in keeps its status, and a copy of the original data is kept under
   `class-checkin-v1-backup`. Set real start times and late minutes in Classes.
 
 ## Where things live
