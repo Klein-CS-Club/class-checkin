@@ -608,6 +608,7 @@ button:disabled { cursor: not-allowed; }
   .page-head h1, .page-title { flex-basis: 100%; }
   .page-head .btn-primary, .page-head .btn-secondary { padding: 0 12px; }
   .page-body .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .page-body .panels { grid-template-columns: minmax(0, 1fr); }
   .page-body .panel-head { flex-wrap: wrap; }
   .status-cell { gap: 6px; }
 }
@@ -749,11 +750,11 @@ button.list-row:hover { background: var(--surface-2); }
   .edited-undo { order: 1; }
 }
 /* ---------- Attendance and Restroom tabs ---------- */
-.tabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--border-strong); }
+.tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; border-bottom: 1px solid var(--border-strong); }
 .tab { margin-bottom: -1px; padding: 10px 16px; border-bottom: 3px solid transparent; color: var(--muted); font-weight: 500; text-decoration: none; }
 .tab:hover { color: var(--text-2); }
 .tab[aria-current="page"] { border-bottom-color: var(--primary); color: var(--text); }
-.tabs-brief { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tabs-brief { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .demo-controls { border-style: dashed; }
 .demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .demo-row .spacer { flex: 1; }
