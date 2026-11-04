@@ -1,6 +1,6 @@
 import {
-  restroomSummary, departureEligibility, rulesFor, requestRestroom, markOut, markReturned, cancelRequest,
-  sortedStudents, todayFor, nowFor, bellFor,
+  restroomSummary, departureEligibility, closingProblem, rulesFor, requestRestroom, markOut, markReturned,
+  cancelRequest, sortedStudents, todayFor, nowFor, bellFor,
 } from '../store.js';
 import { escapeHtml, duration, time12 } from '../format.js';
 import { openModal } from '../modal.js';
@@ -18,20 +18,17 @@ const msOut = (sum, studentId, at) => sum.trips
   .filter((t) => t.studentId === studentId)
   .reduce((total, t) => total + Math.max(0, (t.returnedAt ?? at) - t.departedAt), 0);
 
-// The session's running totals. Time out counts trips that haven't ended yet.
-const totalsText = (sum) => {
-  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-  return `${plural(sum.trips.length, 'trip')} · ${plural(sum.unique, 'student')} · ${duration(sum.totalMs)} out`;
-};
-
 export function ruleText(cls, date, at) {
-  if (date !== todayFor(cls)) return 'Trips can only be started today. Students who are still out can be marked returned.';
-  const { startAt } = bellFor(cls, date);
+  if (date !== todayFor(cls)) return 'Trips can only be started today. Students who are still out can be marked back.';
+  const { startAt, endAt } = bellFor(cls, date);
   const { capacity, restrictionMinutes } = rulesFor(cls);
   if (at < startAt) return `Class starts at ${time12(startAt)}. Students can join the waitlist until then.`;
   const opensAt = startAt + restrictionMinutes * 60000;
   if (at < opensAt) return `Trips open at ${time12(opensAt)}. Students can join the waitlist until then.`;
-  return `Trips are open: ${capacity} at a time, in the order students asked.`;
+  const closed = closingProblem(cls, date, at);
+  if (closed) return `${closed} Students who are out can still come back.`;
+  const until = endAt ? ` until ${time12(endAt - restrictionMinutes * 60000)}` : '';
+  return `Trips are open${until}: ${capacity} at a time, in the order students asked.`;
 }
 
 export function restroomHtml(cls, date) {
@@ -48,8 +45,14 @@ export function restroomHtml(cls, date) {
         <span class="list-title">${name(t.studentId)}</span>
         <span class="list-sub">Left ${time12(t.departedAt)} · <span data-since="${t.departedAt}"></span>${note(t)}</span>
       </span>
-      <button class="btn-secondary" data-r="return" data-student="${t.studentId}">Mark returned</button>
+      <button class="btn-primary" data-r="return" data-student="${t.studentId}">I’m back</button>
     </div>`).join('');
+
+  const outPanel = `
+    <section class="panel trip-list">
+      <div class="panel-head"><h2>Out now</h2><span class="stat-sub">${sum.active.length} of ${capacity} allowed</span></div>
+      ${outRows || '<div class="panel-empty">Everyone is in class.</div>'}
+    </section>`;
 
   const waitRows = sum.queue.map((q, i) => `
     <div class="list-row">
@@ -62,11 +65,18 @@ export function restroomHtml(cls, date) {
       <button class="btn-link" data-r="cancel" data-id="${q.id}" aria-label="Remove ${name(q.studentId)} from the waitlist">Remove</button>
     </div>`).join('');
 
+  const waitPanel = `
+    <section class="panel trip-list">
+      <div class="panel-head"><h2>Waitlist</h2><span class="stat-sub">First asked, first out</span></div>
+      ${waitRows || '<div class="panel-empty">No one is waiting.</div>'}
+    </section>`;
+
+  // Students who are out come back from the Out now list, so their row here just says where they are.
   const studentRows = sortedStudents(cls).map((s) => {
     const out = sum.active.some((t) => t.studentId === s.id);
     const place = sum.queue.findIndex((q) => q.studentId === s.id);
     let action = '—';
-    if (out) action = `<button class="btn-secondary" data-r="return" data-student="${s.id}">Mark returned</button>`;
+    if (out) action = '<span class="muted">Out</span>';
     else if (place >= 0) action = `<span class="muted">Waiting · #${place + 1}</span>`;
     else if (isToday) {
       action = `<button class="btn-link" data-r="override" data-student="${s.id}">Override</button>
@@ -81,6 +91,16 @@ export function restroomHtml(cls, date) {
       </tr>`;
   }).join('');
 
+  const studentsPanel = `
+    <section class="panel">
+      <div class="panel-head"><h2>Students</h2></div>
+      ${cls.students.length ? `
+        <table class="table">
+          <thead><tr><th>Student</th><th>Trips</th><th>Time out</th><th class="status-col">Restroom</th></tr></thead>
+          <tbody>${studentRows}</tbody>
+        </table>` : '<div class="panel-empty">No students in this class yet.</div>'}
+    </section>`;
+
   const doneRows = [...sum.completed].reverse().map((t) => `
     <div class="list-row">
       <span class="list-text">
@@ -89,31 +109,19 @@ export function restroomHtml(cls, date) {
       </span>
     </div>`).join('');
 
+  const donePanel = `
+    <section class="panel trip-list">
+      <div class="panel-head"><h2>Completed trips</h2></div>
+      ${doneRows || '<div class="panel-empty">Finished trips show up here.</div>'}
+    </section>`;
+
   return `
     <p class="hint" id="r-rule">${escapeHtml(ruleText(cls, date, at))}</p>
     <p class="hint" role="status">${escapeHtml(notice)}</p>
-    <div class="panels">
-      <section class="panel trip-list">
-        <div class="panel-head"><h2>Out now</h2><span class="stat-sub">${sum.active.length} of ${capacity} allowed</span></div>
-        ${outRows || '<div class="panel-empty">Everyone is in class.</div>'}
-      </section>
-      <section class="panel trip-list">
-        <div class="panel-head"><h2>Waitlist</h2><span class="stat-sub">First asked, first out</span></div>
-        ${waitRows || '<div class="panel-empty">No one is waiting.</div>'}
-      </section>
-    </div>
-    <section class="panel">
-      <div class="panel-head"><h2>Students</h2></div>
-      ${cls.students.length ? `
-        <table class="table">
-          <thead><tr><th>Student</th><th>Trips</th><th>Time out</th><th class="status-col">Restroom</th></tr></thead>
-          <tbody>${studentRows}</tbody>
-        </table>` : '<div class="panel-empty">No students in this class yet.</div>'}
-    </section>
-    <section class="panel trip-list">
-      <div class="panel-head"><h2>Completed trips</h2><span class="stat-sub" id="r-total">${totalsText(sum)}</span></div>
-      ${doneRows || '<div class="panel-empty">Finished trips show up here.</div>'}
-    </section>`;
+    <div class="restroom-grid">
+      <div class="restroom-col">${outPanel + waitPanel}</div>
+      <div class="restroom-col">${studentsPanel + donePanel}</div>
+    </div>`;
 }
 
 // Runs every second: updates timers and button states in place, so typing and focus aren't disturbed.
@@ -122,8 +130,6 @@ export function refreshRestroomLive(root, cls, date) {
   const sum = restroomSummary(cls.id, date, at);
   root.querySelectorAll('[data-since]').forEach((n) => { n.textContent = duration(at - Number(n.dataset.since)); });
   root.querySelectorAll('[data-out-for]').forEach((n) => { n.textContent = duration(msOut(sum, n.dataset.outFor, at)); });
-  const total = root.querySelector('#r-total');
-  if (total) total.textContent = totalsText(sum);
   const rule = root.querySelector('#r-rule');
   if (rule) rule.textContent = ruleText(cls, date, at);
   root.querySelectorAll('[data-go]').forEach((b) => {

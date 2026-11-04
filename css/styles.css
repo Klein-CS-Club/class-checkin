@@ -762,6 +762,9 @@ button.list-row:hover { background: var(--surface-2); }
 .demo-row .spacer { flex: 1; }
 .demo-row input[type="time"] { height: 40px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font: inherit; }
 .demo-error { margin: 0; padding: 0 16px 12px; }
+.restroom-grid { display: grid; grid-template-columns: minmax(380px, 40%) minmax(0, 1fr); gap: 16px; align-items: start; }
+.restroom-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 980px) { .restroom-grid { grid-template-columns: minmax(0, 1fr); } }
 .trip-list .list-text { display: flex; flex-direction: column; gap: 2px; }
 .trip-list .list-row { flex-wrap: wrap; }
 
