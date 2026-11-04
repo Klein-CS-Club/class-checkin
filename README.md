@@ -1,7 +1,8 @@
 # Class Check-in
 
-A classroom attendance app for one teacher. Students check themselves in on a shared tablet at the
-door, and the teacher exports each day's attendance as a CSV file that opens in Google Sheets or Excel.
+A classroom attendance and restroom app for one teacher. Students check themselves in on a shared tablet
+at the door, the same tablet handles restroom trips and the waitlist, and the teacher exports each day's
+attendance as a CSV file that opens in Google Sheets or Excel.
 
 It's plain HTML, CSS and JavaScript with no build step and no dependencies. Everything is saved in the
 browser's `localStorage`, so nothing leaves the device. There's no database and no login.
@@ -30,14 +31,28 @@ The first run loads three demo classes with made-up names and a week of history.
   today ("14/18"). Picking a period opens its attendance, and **Add class** adds one. The sidebar
   button at the top collapses it to a 64px icon rail (periods show as number tiles) and opens it
   again; the choice is remembered. Phones always get the rail.
-- **Classes** (`#/classes`): add a class with a "late after" time, then add students. You can paste names
-  one per line, type a single name, or import a CSV. "Last, First" is flipped to "First Last", and names
-  already on the roster are skipped.
+- **Classes** (`#/classes`): add a class with a **start time** and **late after (minutes)**, then add
+  students. You can paste names one per line, type a single name, or import a CSV. "Last, First" is
+  flipped to "First Last", and names already on the roster are skipped. Times use the device's clock.
 - **Attendance** (`#/attendance`): shows the period picked in the sidebar. Step through days with ‹ ›. Statuses are worked out from check-in times:
-  **Present** at or before the late-after minute, **Late** after it, **Absent** with no check-in, and
-  **Not yet** today until the late-after time. Tap P / L / A to override a status. **Edited · Undo** puts
-  it back to automatic. **Mark rest present** fills in everyone still absent.
-- **Export CSV** downloads the day you're looking at: Date, Class, Student, Status, Check-in time.
+  **Present** at or before the late cutoff (start time plus the late-after minutes), **Late** after it, and
+  **Not yet** for everyone who hasn't checked in. **Minutes late** counts whole minutes after the start
+  time, rounded up. **Finalize attendance** (today only) marks everyone who hasn't checked in as
+  **Absent**, and can be undone. Days that are over count as Absent without finalizing. Tap P / L / A to
+  override a status. **Edited · Undo** puts it back to automatic. **Mark rest present** fills in everyone
+  who is absent or not yet in. **Change start time** sets a different start for just that day (an
+  assembly, a short day); the late cutoff moves with it, and **Use usual time** puts it back.
+- **Restroom** (`#/restroom`): the second tab of the same page, using the same class and date. It shows
+  who is **Out now**, who is **Waiting**, and running totals (trips, students, time out), then a list of
+  students with **Send out** or **Add to waitlist**, and the completed trips. A student can leave once
+  class has started, the first minutes after the start are over (default 10), there is a free slot
+  (default 1 student at a time), and nobody is waiting ahead of them. Anyone who can't go yet joins the
+  waitlist, first come first served, and **Go now** lights up for the first in line when it's their turn.
+  Requests and returns are always allowed. **Override** sends a student out regardless of the opening
+  minutes, a full restroom or the queue order, and needs a reason, which is saved and shown with the
+  trip. Trips can only start on today's date, and a student who is still out can be marked returned
+  from any date. Set the capacity and opening minutes in Settings (0 minutes allows trips from the start).
+- **Export CSV** downloads the day you're looking at: Date, Class, Student, Status, Check-in time, Minutes late.
 - **Start check-in** locks the tablet into the kiosk for that class and hides the sidebar.
 - **Kiosk** (`#/checkin`): built for a Chromebook at the door. A dark bar shows the class, a live clock
   and date, and how many are checked in. Students type part of their name (accents optional, any word
@@ -49,12 +64,24 @@ The first run loads three demo classes with made-up names and a week of history.
   under the button shows the name and time with **Not you?** (undoes it) and **✕** (closes it). A bar under it counts down 8 seconds, then it
   closes on its own. A second check-in on the same day saves nothing. The kiosk shows check-in
   times but never late status.
+- **Kiosk Restroom tab**: a **Check in / Restroom** switch sits above the name box. On Restroom a student
+  finds their name and presses one button: **Go to restroom** when they can leave now, **Join waitlist**
+  when they can't, **Go now** when it's their turn, or **I'm back**. The bar shows how many are out and
+  waiting, and the list updates by itself when trips open or a slot frees up.
 - **Teacher** (top right of the kiosk) asks for the PIN to leave. The default PIN is **1234**, and you can
   change it in Settings. It only stops casual tapping. It isn't real security.
-- **Backup** (Settings): **Download backup** saves classes, rosters, attendance and the PIN as a JSON
-  file, and **Restore** loads one back, replacing what's on the device. Clearing the browser's data
-  erases everything, so download a new backup after changing rosters. Backups also move data to a new
-  device or web address.
+- **Backup** (Settings): **Download backup** saves classes, rosters, attendance, restroom trips and
+  settings as a JSON file, and **Restore** loads one back, replacing what's on the device. Clearing the
+  browser's data erases everything, so download a new backup after changing rosters. Backups also move
+  data to a new device or web address. Older backups still restore.
+- **Period 7 demo** (Settings → Open Period 7 demo): adds a made-up class that starts at 2:00 PM, with a
+  clock that stays put until you press a time (1:59, 2:00, 2:05, 2:06, 2:10, 2:15 or any other). Use it
+  to try the opening block, waitlist, capacity, overrides and late arrivals without waiting for the bell.
+  It always uses 1 student at a time and a 10-minute opening block, and **Reset demo** removes only its
+  own records.
+- **Upgrading**: older saves had one "late after" time per class. It becomes the start time with 0 late
+  minutes, so every old check-in keeps its status, and a copy of the original data is kept under
+  `class-checkin-v1-backup`. Set real start times and late minutes in Classes.
 
 ## Where things live
 
@@ -66,10 +93,12 @@ The first run loads three demo classes with made-up names and a week of history.
 | `js/store.js` | All state and actions; the only code that touches `localStorage` |
 | `js/names.js` | Accent-free name search, sorting by last name, "Last, First" cleanup |
 | `js/csv.js` | CSV writer (BOM, quoting, formula guard), parser for roster import, download |
-| `js/format.js` | Local dates (`YYYY-MM-DD`), times, `escapeHtml` |
+| `js/format.js` | Local dates (`YYYY-MM-DD`), times, durations, `escapeHtml` |
 | `js/seed.js` | Demo classes, made-up names only |
 | `js/modal.js`, `js/icons.js` | Modal, confirm dialog and inline SVG icons from the cash register |
-| `js/views/*.js` | Sidebar, check-in kiosk, Attendance, Classes, Settings |
+| `js/views/*.js` | Sidebar, check-in kiosk, Attendance, Restroom tab, Classes, Settings |
+| `tests/store.test.js` | Tests for the store: late times, finalizing, restroom rules, backup. Run `node --test` |
+| `package.json` | Only tells Node the files are modules so the tests can load them; there are no dependencies |
 
 ## Limits
 
