@@ -18,7 +18,7 @@ const msOut = (sum, studentId, at) => sum.trips
   .filter((t) => t.studentId === studentId)
   .reduce((total, t) => total + Math.max(0, (t.returnedAt ?? at) - t.departedAt), 0);
 
-function ruleText(cls, date, at) {
+export function ruleText(cls, date, at) {
   if (date !== todayFor(cls)) return 'Trips can only be started today. Students who are still out can be marked returned.';
   const { startAt } = bellFor(cls, date);
   const { capacity, restrictionMinutes } = rulesFor(cls);

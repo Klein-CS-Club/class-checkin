@@ -467,6 +467,10 @@ button:disabled { cursor: not-allowed; }
   background: var(--surface);
   border-right: 1px solid var(--border);
 }
+.kiosk-tabs { display: flex; gap: 4px; padding: 4px; border-radius: var(--radius); background: var(--surface-2); }
+.kiosk-tab { flex: 1; height: 44px; border-radius: var(--radius-sm); color: var(--text-2); font-size: 16px; font-weight: 600; }
+.kiosk-tab[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.kiosk-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 14px; font-weight: 400; }
 .kiosk-label { font-size: 15px; font-weight: 600; color: var(--text-2); }
 .kiosk-search {
   flex: none;
