@@ -18,7 +18,8 @@ function initialState() {
   return {
     settings: { pin: '1234', sidebarExpanded: true },
     currentClassId: null, // the period picked in the sidebar
-    // [{ id, name, startTime: 'HH:mm', lateMinutes, dayStarts: { date: 'HH:mm' }, students: [{ id, name }] }]
+    // [{ id, name, startTime: 'HH:mm', lateMinutes, absentMinutes: n | null,
+    //    days: { date: { startTime, lateMinutes, absentMinutes } }, students: [{ id, name }] }]
     classes: [],
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
@@ -30,12 +31,14 @@ function initialState() {
 // Older saves had a single "late after" time per class. It becomes the start time with no grace
 // minutes, so every old check-in keeps the status it had.
 function upgradeClasses(classes) {
-  return classes.map(({ lateAfter, ...c }) => ({
-    ...c,
-    startTime: c.startTime ?? lateAfter ?? '08:00',
-    lateMinutes: c.lateMinutes ?? 0,
-    dayStarts: c.dayStarts ?? {},
-  }));
+  return classes.map(({ lateAfter, dayStarts, ...c }) => {
+    const lateMinutes = c.lateMinutes ?? 0;
+    const absentMinutes = c.absentMinutes ?? null;
+    // A day that was changed keeps all of its numbers. The first version only kept a start time.
+    const fromStarts = Object.fromEntries(
+      Object.entries(dayStarts ?? {}).map(([date, startTime]) => [date, { startTime, lateMinutes, absentMinutes }]));
+    return { ...c, startTime: c.startTime ?? lateAfter ?? '08:00', lateMinutes, absentMinutes, days: c.days ?? fromStarts };
+  });
 }
 
 // First run starts with demo classes so there's something to try.
@@ -87,8 +90,8 @@ export function selectClass(id) {
 export const sortedStudents =(cls) => [...cls.students].sort((a, b) => compareByName(a.name, b.name));
 
 // ---------- Classes and rosters ----------
-export function addClass(name, startTime, lateMinutes) {
-  const cls = { id: uid(), name, startTime, lateMinutes, dayStarts: {}, students: [] };
+export function addClass(name, startTime, lateMinutes, absentMinutes = null) {
+  const cls = { id: uid(), name, startTime, lateMinutes, absentMinutes, days: {}, students: [] };
   commit({ ...state, classes: [...state.classes, cls] });
   return cls.id;
 }
@@ -162,7 +165,7 @@ export const isCheckedIn = (classId, studentId, date = todayKey()) => !!findChec
 // ---------- Status (derived, never stored) ----------
 const overrideKey = (classId, date, studentId) => `${classId}|${date}|${studentId}`;
 
-// One class on one date. Finalizing, the restroom queue and trips are all kept per session.
+// One class on one date. Finalizing is kept per session.
 export const sessionId = (classId, date) => `${classId}|${date}`;
 
 export const isFinalized = (classId, date) => !!state.finalized[sessionId(classId, date)];
@@ -179,30 +182,55 @@ export function undoFinalize(classId, date) {
   commit({ ...state, finalized });
 }
 
-// A class starts at its usual start time unless that one date has its own.
-export const startTimeFor = (cls, date) => cls.dayStarts?.[date] ?? cls.startTime;
+// The numbers a class runs on for one date: its usual ones, unless that date was changed.
+// absentMinutes is how long after the start an arrival counts as absent; null means never.
+export const scheduleFor = (cls, date) => cls.days?.[date] ?? {
+  startTime: cls.startTime,
+  lateMinutes: cls.lateMinutes,
+  absentMinutes: cls.absentMinutes ?? null,
+};
 
-// A time puts that one date on its own start time; null puts it back on the usual one.
-export function setDayStart(classId, date, time) {
-  const dayStarts = { ...classById(classId).dayStarts };
-  if (time) dayStarts[date] = time;
-  else delete dayStarts[date];
-  updateClass(classId, { dayStarts });
+// A schedule puts that one date on its own numbers; null puts it back on the usual ones.
+export function setDaySchedule(classId, date, schedule) {
+  const days = { ...classById(classId).days };
+  if (schedule) days[date] = schedule;
+  else delete days[date];
+  updateClass(classId, { days });
 }
 
-// When the class starts and when arrivals turn late, as timestamps.
+// Why these can't be a class's late and absent minutes, or '' when they can.
+export function bellProblem(lateMinutes, absentMinutes) {
+  if (!Number.isInteger(lateMinutes) || lateMinutes < 0 || lateMinutes > 60) return 'Late after must be 0 to 60 whole minutes.';
+  if (absentMinutes === null) return '';
+  if (!Number.isInteger(absentMinutes) || absentMinutes <= lateMinutes || absentMinutes > 240) {
+    return 'Absent after must be a whole number of minutes, more than Late after. Leave it empty to never mark late arrivals absent.';
+  }
+  return '';
+}
+
+// When the class starts, when arrivals turn late, and when (if ever) they count as absent, as timestamps.
 export function bellFor(cls, date) {
-  const startAt = atTime(date, startTimeFor(cls, date));
-  return { startAt, cutoffAt: startAt + cls.lateMinutes * 60000 };
+  const { startTime, lateMinutes, absentMinutes } = scheduleFor(cls, date);
+  const startAt = atTime(date, startTime);
+  return {
+    startAt,
+    cutoffAt: startAt + lateMinutes * 60000,
+    absentAt: absentMinutes == null ? null : startAt + absentMinutes * 60000,
+  };
 }
 
-// An override wins. Otherwise a check-in at or before the late cutoff is present and after it is
-// late. With no check-in, the student is absent once the day is finalized or over, else "not yet".
+// An override wins. Otherwise a check-in at or before the late cutoff is present, after it is late,
+// and after the absent cutoff (if the class has one) is absent. With no check-in, the student is
+// absent once the day is finalized or over, else "not yet".
 export function statusFor(cls, date, studentId) {
   const override = state.overrides[overrideKey(cls.id, date, studentId)];
   if (override) return override;
   const entry = findCheckIn(cls.id, date, studentId);
-  if (entry) return entry.at <= bellFor(cls, date).cutoffAt ? 'present' : 'late';
+  if (entry) {
+    const { cutoffAt, absentAt } = bellFor(cls, date);
+    if (absentAt !== null && entry.at > absentAt) return 'absent';
+    return entry.at <= cutoffAt ? 'present' : 'late';
+  }
   return isFinalized(cls.id, date) || date < todayKey() ? 'absent' : 'notyet';
 }
 

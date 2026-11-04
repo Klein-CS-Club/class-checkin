@@ -57,7 +57,8 @@ export function demoData(uid) {
     name: c.name,
     startTime: c.startTime,
     lateMinutes: LATE_MINUTES,
-    dayStarts: {},
+    absentMinutes: null,
+    days: {},
     students: c.students.map((name) => ({ id: uid(), name })),
   }));
   const checkIns = [];
