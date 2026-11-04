@@ -1,5 +1,5 @@
 import { icon } from '../icons.js';
-import { getState, subscribe, classById, sortedStudents, addClass, selectClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
+import { getState, subscribe, classById, sortedStudents, bellProblem, addClass, selectClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
 import { escapeHtml, timeLabel, parseTime } from '../format.js';
 import { showTimeHint } from './timeinput.js';
 import { namesFromCsv } from '../csv.js';
@@ -26,7 +26,7 @@ export function renderClasses(el) {
             <div class="panel-head">
               <div>
                 <h2>${escapeHtml(c.name)}</h2>
-                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · Starts ${escapeHtml(timeLabel(c.startTime))} · Late after ${c.lateMinutes} min</div>
+                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · Starts ${escapeHtml(timeLabel(c.startTime))} · Late after ${c.lateMinutes} min${c.absentMinutes ? ` · Absent after ${c.absentMinutes} min` : ''}</div>
               </div>
               <span class="spacer"></span>
               <button class="btn-link" data-a="edit-class" data-class="${c.id}">${icon('edit')}Edit</button>
@@ -92,8 +92,12 @@ export function classDialog(cls) {
             <span>Late after (minutes)</span>
             <input name="lateMinutes" type="number" min="0" max="60" step="1" inputmode="numeric" value="${cls?.lateMinutes ?? 5}">
           </label>
-          <p class="hint">Arrivals more than this many minutes after the start time count as late.
-            You can change the start time for a single day on the Attendance page.</p>
+          <label class="field">
+            <span>Absent after (minutes, optional)</span>
+            <input name="absentMinutes" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="Never" value="${cls?.absentMinutes ?? ''}">
+          </label>
+          <p class="hint">Arrivals more than “late after” minutes past the start time count as late. If you set “absent after”,
+            arrivals past that count as absent instead. You can change any of these for a single day on the Attendance page.</p>
           <p class="field-error" hidden></p>
           <div class="modal-actions">
             ${cls ? '<button type="button" class="btn-link danger-link" data-a="delete">Delete class</button><span class="spacer"></span>' : ''}
@@ -110,14 +114,16 @@ export function classDialog(cls) {
         const name = form.name.value.trim();
         const startTime = parseTime(form.startTime.value);
         const lateMinutes = Number(form.lateMinutes.value);
+        const absentText = form.absentMinutes.value.trim();
+        const absentMinutes = absentText === '' ? null : Number(absentText);
         const error = !name ? 'Give the class a name.'
           : !startTime ? 'Type a start time like 8:00 AM.'
-          : !Number.isInteger(lateMinutes) || lateMinutes < 0 || lateMinutes > 60 ? 'Late after must be 0 to 60 whole minutes.' : '';
+          : bellProblem(lateMinutes, absentMinutes);
         errorEl.textContent = error;
         errorEl.hidden = !error;
         if (error) return;
-        if (cls) updateClass(cls.id, { name, startTime, lateMinutes });
-        else selectClass(addClass(name, startTime, lateMinutes)); // a new class opens as the current period
+        if (cls) updateClass(cls.id, { name, startTime, lateMinutes, absentMinutes });
+        else selectClass(addClass(name, startTime, lateMinutes, absentMinutes)); // a new class opens as the current period
         close();
       });
 

@@ -1,6 +1,6 @@
 import { icon } from '../icons.js';
 import {
-  subscribe, classById, currentClass, dayRows, bellFor, startTimeFor, setDayStart, setOverride, markRestPresent,
+  subscribe, classById, currentClass, dayRows, bellFor, scheduleFor, setDaySchedule, bellProblem, setOverride, markRestPresent,
   isFinalized, finalizeAttendance, undoFinalize, restroomSummary, todayFor, nowFor, setDemoClock, resetDemo,
   startKiosk, STATUSES,
 } from '../store.js';
@@ -13,6 +13,15 @@ import { restroomHtml, refreshRestroomLive, handleRestroomClick, clearRestroomNo
 let date = todayKey();
 
 const SEG = [['present', 'P'], ['late', 'L'], ['absent', 'A']];
+
+// "Starts 8:00 AM · Late after 8:05 AM · Absent after 8:15 AM", noting when the day was changed.
+function bellSummary(cls, date) {
+  const { startTime } = scheduleFor(cls, date);
+  const { cutoffAt, absentAt } = bellFor(cls, date);
+  const changed = cls.days?.[date] ? ' (changed for this day)' : '';
+  const absent = absentAt === null ? '' : ` · Absent after ${time12(absentAt)}`;
+  return `Starts ${timeLabel(startTime)}${changed} · Late after ${time12(cutoffAt)}${absent}`;
+}
 
 // The Attendance and Restroom tabs share the class and date picked in the sidebar and header.
 function tabsHtml(cls, restroom) {
@@ -108,8 +117,8 @@ export function renderAttendance(el) {
       <section class="panel att-panel">
         <div class="panel-head">
           <h2>${escapeHtml(dayLabel(date))}${isToday ? ' · Today' : ''}</h2>
-          <span class="stat-sub">Starts ${escapeHtml(timeLabel(startTimeFor(cls, date)))}${cls.dayStarts?.[date] ? ' (changed for this day)' : ''} · Late after ${escapeHtml(time12(bellFor(cls, date).cutoffAt))}</span>
-          <button class="btn-link" id="day-start">Change start time</button>
+          <span class="stat-sub">${escapeHtml(bellSummary(cls, date))}</span>
+          <button class="btn-link" id="day-times">Change times</button>
           <span class="spacer"></span>
           <button class="btn-secondary" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
           ${isToday ? `<button class="btn-secondary" id="finalize">${isFinalized(cls.id, date) ? 'Undo finalization' : 'Finalize attendance'}</button>` : ''}
@@ -185,8 +194,8 @@ export function renderAttendance(el) {
         confirmLabel: 'Mark absent',
       });
       if (ok) finalizeAttendance(cls.id, date);
-    } else if (t.id === 'day-start') {
-      dayStartDialog(currentClass(), date);
+    } else if (t.id === 'day-times') {
+      dayTimesDialog(currentClass(), date);
     } else if (t.id === 'export') {
       exportDay(currentClass().id, date);
     } else if (t.id === 'kiosk') {
@@ -208,25 +217,34 @@ export function renderAttendance(el) {
   return () => { unsubscribe(); clearInterval(timer); };
 }
 
-// A different start time for one date, such as an assembly or a shortened day.
-function dayStartDialog(cls, date) {
-  const changed = !!cls.dayStarts?.[date];
+// Different times for one date, such as an assembly or a shortened day.
+function dayTimesDialog(cls, date) {
+  const usual = { startTime: cls.startTime, lateMinutes: cls.lateMinutes, absentMinutes: cls.absentMinutes ?? null };
+  const now = scheduleFor(cls, date);
+  const changed = !!cls.days?.[date];
   openModal({
-    title: `Start time for ${dayLabel(date)}`,
+    title: `Times for ${dayLabel(date)}`,
     className: 'modal-sm',
     render(body, close) {
       body.innerHTML = `
         <form class="form" novalidate>
           <label class="field">
             <span>Start time</span>
-            <input name="time" type="text" autocomplete="off" placeholder="8:00 AM" value="${escapeHtml(timeLabel(startTimeFor(cls, date)))}" autofocus>
+            <input name="time" type="text" autocomplete="off" placeholder="8:00 AM" value="${escapeHtml(timeLabel(now.startTime))}" autofocus>
           </label>
           <p class="hint" id="time-hint"></p>
-          <p class="hint">Only for this day. The usual start time is ${escapeHtml(timeLabel(cls.startTime))},
-            and arrivals more than ${cls.lateMinutes} min after the start still count as late.</p>
+          <label class="field">
+            <span>Late after (minutes)</span>
+            <input name="late" type="number" min="0" max="60" step="1" inputmode="numeric" value="${now.lateMinutes}">
+          </label>
+          <label class="field">
+            <span>Absent after (minutes, optional)</span>
+            <input name="absent" type="number" min="1" max="240" step="1" inputmode="numeric" placeholder="Never" value="${now.absentMinutes ?? ''}">
+          </label>
+          <p class="hint">Only for this day. The usual times are ${escapeHtml(timeLabel(usual.startTime))}, late after ${usual.lateMinutes} min${usual.absentMinutes ? `, absent after ${usual.absentMinutes} min` : ''}.</p>
           <p class="field-error" hidden></p>
           <div class="modal-actions">
-            ${changed ? '<button type="button" class="btn-link" data-a="usual">Use usual time</button>' : ''}
+            ${changed ? '<button type="button" class="btn-link" data-a="usual">Use usual times</button>' : ''}
             <span class="spacer"></span>
             <button type="button" class="btn-secondary" data-a="cancel">Cancel</button>
             <button type="submit" class="btn-primary">Save</button>
@@ -238,18 +256,23 @@ function dayStartDialog(cls, date) {
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const time = parseTime(form.time.value);
-        errorEl.hidden = !!time;
-        errorEl.textContent = 'Type a start time like 8:00 AM.';
-        if (!time) return;
-        setDayStart(cls.id, date, time === cls.startTime ? null : time);
+        const startTime = parseTime(form.time.value);
+        const lateMinutes = Number(form.late.value);
+        const absentText = form.absent.value.trim();
+        const absentMinutes = absentText === '' ? null : Number(absentText);
+        const error = !startTime ? 'Type a start time like 8:00 AM.' : bellProblem(lateMinutes, absentMinutes);
+        errorEl.textContent = error;
+        errorEl.hidden = !error;
+        if (error) return;
+        const same = startTime === usual.startTime && lateMinutes === usual.lateMinutes && absentMinutes === usual.absentMinutes;
+        setDaySchedule(cls.id, date, same ? null : { startTime, lateMinutes, absentMinutes });
         close();
       });
 
       body.addEventListener('click', (e) => {
         const a = e.target.closest('[data-a]')?.dataset.a;
         if (a === 'cancel') close();
-        if (a === 'usual') { setDayStart(cls.id, date, null); close(); }
+        if (a === 'usual') { setDaySchedule(cls.id, date, null); close(); }
       });
     },
   });

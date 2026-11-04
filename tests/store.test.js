@@ -60,12 +60,46 @@ test('a manual status edit clears minutes late', () => {
 });
 
 test('changing one day moves the cutoff for that day only', () => {
-  store.setDayStart(classId, day, '09:00');
+  store.setDaySchedule(classId, day, { startTime: '09:00', lateMinutes: 5, absentMinutes: null });
   clock('08:30');
   store.checkIn(classId, ann);
   assert.equal(status(ann), 'present');
-  store.setDayStart(classId, day, null);
+  store.setDaySchedule(classId, day, null);
   assert.equal(status(ann), 'late');
+});
+
+test('one day can have its own late minutes', () => {
+  store.setDaySchedule(classId, day, { startTime: '08:00', lateMinutes: 20, absentMinutes: null });
+  clock('08:15');
+  store.checkIn(classId, ann);
+  assert.equal(status(ann), 'present');
+  assert.equal(store.classById(classId).lateMinutes, 5); // the usual number is untouched
+});
+
+test('arriving after the absent cutoff counts as absent, and the check-in is kept', () => {
+  store.updateClass(classId, { absentMinutes: 15 });
+  clock('08:15');
+  store.checkIn(classId, ann);
+  clock('08:16');
+  store.checkIn(classId, bob);
+  assert.equal(status(ann), 'late');
+  assert.equal(status(bob), 'absent');
+  assert.equal(store.minutesLate(store.classById(classId), day, bob), 16);
+  assert.ok(store.dayRows(classId, day).find((r) => r.student.id === bob).checkIn);
+});
+
+test('with no absent cutoff, a late arrival stays late however late it is', () => {
+  clock('11:00');
+  store.checkIn(classId, ann);
+  assert.equal(status(ann), 'late');
+});
+
+test('late and absent minutes are checked', () => {
+  assert.equal(store.bellProblem(5, null), '');
+  assert.equal(store.bellProblem(5, 15), '');
+  assert.match(store.bellProblem(61, null), /0 to 60/);
+  assert.match(store.bellProblem(5, 5), /more than Late after/);
+  assert.match(store.bellProblem(5, 2.5), /whole number/);
 });
 
 // ---------- Finalizing ----------
@@ -203,6 +237,22 @@ test('a backup from before start times and trips still restores', () => {
   assert.deepEqual([cls.startTime, cls.lateMinutes, cls.lateAfter], ['09:05', 0, undefined]);
   assert.equal(store.getState().trips.length, 0);
   assert.equal(store.getState().settings.pin, '4321');
+});
+
+test('a backup with start-time-only day changes keeps those days, with the class’s other numbers', () => {
+  const earlier = JSON.stringify({
+    app: 'class-checkin-v1',
+    classes: [{
+      id: 'c', name: 'Earlier', startTime: '08:00', lateMinutes: 5, dayStarts: { '2026-11-02': '09:30' },
+      students: [{ id: 's', name: 'Sam Earlier' }],
+    }],
+    checkIns: [],
+  });
+  store.restoreBackup(store.readBackup(earlier));
+  const cls = store.classById('c');
+  assert.deepEqual(store.scheduleFor(cls, '2026-11-02'), { startTime: '09:30', lateMinutes: 5, absentMinutes: null });
+  assert.equal(cls.dayStarts, undefined);
+  assert.equal(cls.absentMinutes, null);
 });
 
 test('an old save upgrades on load and keeps a copy of the original', async () => {
