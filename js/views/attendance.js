@@ -119,7 +119,7 @@ export function renderAttendance(el) {
         <div class="panel-head">
           <h2>${escapeHtml(dayLabel(date))}${isToday ? ' · Today' : ''}</h2>
           <span class="stat-sub">${escapeHtml(bellSummary(cls, date))}</span>
-          <button class="btn-link" id="day-times">Change times</button>
+          <button class="btn-link" id="day-times">${isToday ? "Change today's times" : 'Change times'}</button>
           <span class="spacer"></span>
           <button class="btn-secondary" id="rest" ${count('absent') + count('notyet') ? '' : 'disabled'}>${icon('check')}Mark rest present</button>
           ${isToday ? `<button class="btn-secondary" id="finalize">${isFinalized(cls.id, date) ? 'Undo finalization' : 'Finalize attendance'}</button>` : ''}
