@@ -1,4 +1,4 @@
-import { todayKey, hhmm } from './format.js';
+import { todayKey, atTime } from './format.js';
 import { compareByName, sameName, tidyName } from './names.js';
 import { demoData } from './seed.js';
 
@@ -18,20 +18,41 @@ function initialState() {
   return {
     settings: { pin: '1234', sidebarExpanded: true },
     currentClassId: null, // the period picked in the sidebar
-    classes: [],     // [{ id, name, lateAfter: 'HH:mm', students: [{ id, name }] }]
+    // [{ id, name, startTime: 'HH:mm', lateMinutes, dayStarts: { date: 'HH:mm' }, students: [{ id, name }] }]
+    classes: [],
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
     kiosk: null,     // { classId } while the check-in screen is locked on
   };
 }
 
+// Older saves had a single "late after" time per class. It becomes the start time with no grace
+// minutes, so every old check-in keeps the status it had.
+function upgradeClasses(classes) {
+  return classes.map(({ lateAfter, ...c }) => ({
+    ...c,
+    startTime: c.startTime ?? lateAfter ?? '08:00',
+    lateMinutes: c.lateMinutes ?? 0,
+    dayStarts: c.dayStarts ?? {},
+  }));
+}
+
 // First run starts with demo classes so there's something to try.
 function load() {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY));
+    const raw = localStorage.getItem(KEY);
+    const saved = JSON.parse(raw);
     if (saved) {
+      // Keep a copy of the old format the first time it's upgraded.
+      const old = saved.classes?.some((c) => c.startTime === undefined);
+      if (old && !localStorage.getItem(`${KEY}-backup`)) localStorage.setItem(`${KEY}-backup`, raw);
       const base = initialState();
-      return { ...base, ...saved, settings: { ...base.settings, ...saved.settings } };
+      return {
+        ...base,
+        ...saved,
+        settings: { ...base.settings, ...saved.settings },
+        classes: upgradeClasses(saved.classes ?? []),
+      };
     }
   } catch { /* storage unavailable or corrupt: start fresh */ }
   return { ...initialState(), ...demoData(uid) };
@@ -65,8 +86,8 @@ export function selectClass(id) {
 export const sortedStudents =(cls) => [...cls.students].sort((a, b) => compareByName(a.name, b.name));
 
 // ---------- Classes and rosters ----------
-export function addClass(name, lateAfter) {
-  const cls = { id: uid(), name, lateAfter, students: [] };
+export function addClass(name, startTime, lateMinutes) {
+  const cls = { id: uid(), name, startTime, lateMinutes, dayStarts: {}, students: [] };
   commit({ ...state, classes: [...state.classes, cls] });
   return cls.id;
 }
@@ -139,15 +160,25 @@ export const isCheckedIn = (classId, studentId, date = todayKey()) => !!findChec
 // ---------- Status (derived, never stored) ----------
 const overrideKey = (classId, date, studentId) => `${classId}|${date}|${studentId}`;
 
-// An override wins. Otherwise a check-in in or before the "late after" minute is present,
-// after it is late, and no check-in is absent (or "not yet" until the late time today).
+// A class starts at its usual start time unless that one date has its own.
+export const startTimeFor = (cls, date) => cls.dayStarts?.[date] ?? cls.startTime;
+
+// When the class starts and when arrivals turn late, as timestamps.
+export function bellFor(cls, date) {
+  const startAt = atTime(date, startTimeFor(cls, date));
+  return { startAt, cutoffAt: startAt + cls.lateMinutes * 60000 };
+}
+
+// An override wins. Otherwise a check-in at or before the late cutoff is present, after it is late,
+// and no check-in is absent (or "not yet" until the cutoff today).
 export function statusFor(cls, date, studentId, now = Date.now()) {
   const override = state.overrides[overrideKey(cls.id, date, studentId)];
   if (override) return override;
+  const { cutoffAt } = bellFor(cls, date);
   const entry = findCheckIn(cls.id, date, studentId);
-  if (entry) return hhmm(entry.at) <= cls.lateAfter ? 'present' : 'late';
+  if (entry) return entry.at <= cutoffAt ? 'present' : 'late';
   const today = todayKey();
-  if (date > today || (date === today && hhmm(now) <= cls.lateAfter)) return 'notyet';
+  if (date > today || (date === today && now <= cutoffAt)) return 'notyet';
   return 'absent';
 }
 
