@@ -66,12 +66,13 @@ export function renderAttendance(el) {
         </div>
         ${rows.length ? `
           <table class="table">
-            <thead><tr><th>Student</th><th>Checked in</th><th class="status-col">Status</th></tr></thead>
+            <thead><tr><th>Student</th><th>Checked in</th><th>Minutes late</th><th class="status-col">Status</th></tr></thead>
             <tbody>
               ${rows.map((r) => `
                 <tr>
                   <td class="student-name">${escapeHtml(r.student.name)}</td>
                   <td class="tabular muted">${r.checkIn ? escapeHtml(time12(r.checkIn.at)) : '—'}</td>
+                  <td class="tabular muted">${r.minutesLate ?? '—'}</td>
                   <td class="status-col">
                     <div class="status-cell">
                       ${r.overridden ? `<button class="edited-undo" data-student="${r.student.id}" data-status="" aria-label="Undo edit for ${escapeHtml(r.student.name)}" title="Go back to the automatic status">Edited · Undo${icon('close')}</button>` : ''}
@@ -172,7 +173,8 @@ function exportDay(id, day) {
     r.student.name,
     STATUSES[r.status],
     r.checkIn ? time12(r.checkIn.at) : '',
+    r.minutesLate ?? '',
   ]);
   const slug = cls.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  downloadCsv(`attendance-${slug || 'class'}-${day}.csv`, toCsv(['Date', 'Class', 'Student', 'Status', 'Check-in time'], rows));
+  downloadCsv(`attendance-${slug || 'class'}-${day}.csv`, toCsv(['Date', 'Class', 'Student', 'Status', 'Check-in time', 'Minutes late'], rows));
 }

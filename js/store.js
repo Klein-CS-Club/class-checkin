@@ -190,6 +190,15 @@ export function statusFor(cls, date, studentId, now = Date.now()) {
   return 'absent';
 }
 
+// Whole minutes after the start time that a late student arrived, rounded up. Null when they
+// weren't late or the teacher set the status by hand (that edit says nothing about arrival).
+export function minutesLate(cls, date, studentId) {
+  if (state.overrides[overrideKey(cls.id, date, studentId)]) return null;
+  const entry = findCheckIn(cls.id, date, studentId);
+  const { startAt, cutoffAt } = bellFor(cls, date);
+  return entry && entry.at > cutoffAt ? Math.ceil((entry.at - startAt) / 60000) : null;
+}
+
 export function dayRows(classId, date) {
   const cls = classById(classId);
   if (!cls) return [];
@@ -197,6 +206,7 @@ export function dayRows(classId, date) {
     student,
     checkIn: findCheckIn(classId, date, student.id) ?? null,
     status: statusFor(cls, date, student.id),
+    minutesLate: minutesLate(cls, date, student.id),
     overridden: !!state.overrides[overrideKey(classId, date, student.id)],
   }));
 }
