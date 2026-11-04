@@ -1,9 +1,10 @@
 import { icon } from '../icons.js';
 import {
   subscribe, classById, currentClass, dayRows, bellFor, startTimeFor, setDayStart, setOverride, markRestPresent,
-  isFinalized, finalizeAttendance, undoFinalize, restroomSummary, startKiosk, STATUSES,
+  isFinalized, finalizeAttendance, undoFinalize, restroomSummary, todayFor, nowFor, setDemoClock, resetDemo,
+  startKiosk, STATUSES,
 } from '../store.js';
-import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../format.js';
+import { escapeHtml, todayKey, addDays, dayLabel, atTime, hhmm, time12, timeLabel } from '../format.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
 import { restroomHtml, refreshRestroomLive, handleRestroomClick, clearRestroomNotice } from './restroom.js';
@@ -22,6 +23,27 @@ function tabsHtml(cls, restroom) {
       ${tab('#/restroom', 'Restroom', restroom)}
       <span class="tabs-brief">Out: ${active.length} · Waiting: ${queue.length}</span>
     </nav>`;
+}
+
+const DEMO_TIMES = ['13:59', '14:00', '14:05', '14:06', '14:10', '14:15'];
+
+// Period 7 demo only: its clock is frozen and moves when you press a time.
+function demoHtml(cls) {
+  if (!cls.demo) return '';
+  const now = nowFor(cls.id);
+  return `
+    <section class="panel demo-controls">
+      <div class="panel-head"><h2>Demo clock</h2><span class="stat-sub">Period 7 is made up. Its clock stays put until you move it.</span></div>
+      <div class="panel-body demo-row">
+        <strong class="tabular">${escapeHtml(time12(now))}</strong>
+        ${DEMO_TIMES.map((t) => `<button class="btn-secondary" data-demo-time="${t}">${escapeHtml(timeLabel(t))}</button>`).join('')}
+        <input type="time" id="demo-time" value="${hhmm(now)}" aria-label="Other demo time">
+        <button class="btn-secondary" data-demo-time="other">Set</button>
+        <span class="spacer"></span>
+        <button class="btn-link" data-demo-reset>Reset demo</button>
+      </div>
+      <p class="field-error demo-error" id="demo-error" hidden></p>
+    </section>`;
 }
 
 export function renderAttendance(el) {
@@ -65,7 +87,7 @@ export function renderAttendance(el) {
         </div></section>`;
       return;
     }
-    const tabs = tabsHtml(cls, restroom);
+    const tabs = tabsHtml(cls, restroom) + demoHtml(cls);
     if (restroom) {
       bodyEl.innerHTML = tabs + restroomHtml(cls, date);
       refreshRestroomLive(bodyEl, cls, date);
@@ -73,7 +95,7 @@ export function renderAttendance(el) {
     }
     const rows = dayRows(cls.id, date);
     const count = (s) => rows.filter((r) => r.status === s).length;
-    const isToday = date === todayKey();
+    const isToday = date === todayFor(cls);
     bodyEl.innerHTML = tabs + `
       <div class="stats-row">
         ${['present', 'late', 'absent', 'notyet'].map((s) => `
@@ -120,6 +142,27 @@ export function renderAttendance(el) {
     const t = e.target.closest('button');
     if (!t) return;
     if (handleRestroomClick(t, currentClass(), date, render)) return;
+    if (t.dataset.demoTime) {
+      const cls = currentClass();
+      const time = t.dataset.demoTime === 'other' ? el.querySelector('#demo-time').value : t.dataset.demoTime;
+      const message = time ? setDemoClock(atTime(todayFor(cls), time)) : 'Pick a time.';
+      const errorEl = el.querySelector('#demo-error');
+      errorEl.textContent = message;
+      errorEl.hidden = !message;
+      return;
+    }
+    if (t.hasAttribute('data-demo-reset')) {
+      const ok = await confirmDialog({
+        title: 'Reset the Period 7 demo?',
+        message: 'Only the demo class’s check-ins and restroom trips are removed. Your real classes are not touched.',
+        confirmLabel: 'Reset demo',
+      });
+      if (ok) {
+        clearRestroomNotice();
+        resetDemo();
+      }
+      return;
+    }
     if (t.dataset.step) {
       date = addDays(date, Number(t.dataset.step));
       render();

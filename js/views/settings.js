@@ -1,5 +1,5 @@
 import { icon } from '../icons.js';
-import { getState, setPin, setRestroomRules, loadDemo, resetAll, backupText, readBackup, restoreBackup } from '../store.js';
+import { getState, setPin, setRestroomRules, openDemo, loadDemo, resetAll, backupText, readBackup, restoreBackup } from '../store.js';
 import { confirmDialog } from '../modal.js';
 import { downloadFile } from '../csv.js';
 import { todayKey } from '../format.js';
@@ -66,6 +66,14 @@ export function renderSettings(el) {
               <span class="list-sub">Replaces your classes and attendance with three made-up classes and a week of history. Keeps the PIN.</span>
             </span>
             <button class="btn-secondary" data-reset="demo">Load demo</button>
+          </div>
+          <div class="list-row">
+            <span class="list-text">
+              <span class="list-title">Period 7 demo</span>
+              <span class="list-sub">Adds a made-up Period 7 with a clock you set yourself, to try the restroom rules without waiting
+                for the bell. Your classes and records are not touched.</span>
+            </span>
+            <button class="btn-secondary" data-p7>Open Period 7 demo</button>
           </div>
           <div class="list-row">
             <span class="list-text">
@@ -151,6 +159,11 @@ export function renderSettings(el) {
   }
 
   el.querySelector('.danger-zone').addEventListener('click', async (e) => {
+    if (e.target.closest('[data-p7]')) {
+      openDemo();
+      location.hash = '#/restroom';
+      return;
+    }
     const kind = e.target.closest('[data-reset]')?.dataset.reset;
     if (!kind) return;
     const demo = kind === 'demo';

@@ -1,4 +1,4 @@
-import { todayKey, dateKey, atTime, time12 } from './format.js';
+import { todayKey, dateKey, atTime, hhmm, time12 } from './format.js';
 import { compareByName, sameName, tidyName } from './names.js';
 import { demoData } from './seed.js';
 
@@ -28,6 +28,7 @@ function initialState() {
     trips: [],
     // Students waiting for the restroom, first come first served: [{ id, sessionId, classId, studentId, requestedAt: ms }]
     queue: [],
+    demoClock: null, // ms; the frozen "now" of the Period 7 demo class, or null
     kiosk: null,     // { classId } while the check-in screen is locked on
   };
 }
@@ -154,10 +155,11 @@ const findCheckIn = (classId, date, studentId) =>
 
 // Recorded by student id. A second check-in on the same day saves nothing new.
 export function checkIn(classId, studentId) {
-  const date = todayKey();
+  const at = nowFor(classId);
+  const date = dateKey(new Date(at));
   const existing = findCheckIn(classId, date, studentId);
   if (existing) return { kind: 'already', checkIn: existing };
-  const entry = { id: uid(), classId, studentId, date, at: Date.now() };
+  const entry = { id: uid(), classId, studentId, date, at };
   commit({ ...state, checkIns: [...state.checkIns, entry] });
   return { kind: 'recorded', checkIn: entry };
 }
@@ -212,7 +214,7 @@ export function statusFor(cls, date, studentId) {
   if (override) return override;
   const entry = findCheckIn(cls.id, date, studentId);
   if (entry) return entry.at <= bellFor(cls, date).cutoffAt ? 'present' : 'late';
-  return isFinalized(cls.id, date) || date < todayKey() ? 'absent' : 'notyet';
+  return isFinalized(cls.id, date) || date < todayFor(cls) ? 'absent' : 'notyet';
 }
 
 // Whole minutes after the start time that a late student arrived, rounded up. Null when they
@@ -238,7 +240,7 @@ export function dayRows(classId, date) {
 
 // How many students are here today (present or late, overrides included).
 export function hereToday(classId) {
-  return dayRows(classId, todayKey()).filter((r) => r.status === 'present' || r.status === 'late').length;
+  return dayRows(classId, todayFor(classById(classId))).filter((r) => r.status === 'present' || r.status === 'late').length;
 }
 
 // status null clears the override, so the status goes back to automatic.
@@ -264,11 +266,15 @@ export function markRestPresent(classId, date) {
 // opening restriction is over, there's a free slot, and nobody else is waiting ahead of them.
 // The teacher can override all of that except the date, with a reason that stays on the trip.
 
-export const nowFor = () => Date.now();
+// The time a class goes by. Only the Period 7 demo has a frozen clock; every other class uses the real one.
+export const nowFor = (classId) => (classById(classId)?.demo && state.demoClock != null ? state.demoClock : Date.now());
 export const todayFor = (cls) => dateKey(new Date(nowFor(cls.id)));
 
 // capacity: students out at once. restrictionMinutes: none may leave this long after the start.
-export const rulesFor = () => ({ capacity: state.settings.capacity, restrictionMinutes: state.settings.restrictionMinutes });
+// The demo keeps its own rules so its walkthrough never depends on the Settings values.
+export const rulesFor = (cls) => (cls?.demo
+  ? { capacity: 1, restrictionMinutes: 10 }
+  : { capacity: state.settings.capacity, restrictionMinutes: state.settings.restrictionMinutes });
 
 const result = (kind, message) => ({ kind, message });
 
@@ -358,6 +364,51 @@ export function markReturned(classId, date, studentId) {
 
 export function cancelRequest(id) {
   commit({ ...state, queue: state.queue.filter((q) => q.id !== id) });
+}
+
+// ---------- Period 7 demo ----------
+// A made-up class with a frozen clock, for trying the restroom rules without waiting for the bell.
+const DEMO_NAMES = ['Alex River', 'Jordan Bell', 'Sam Flores', 'Taylor Chen', 'Robin Park', 'Casey Reed'];
+
+export const demoClass = () => state.classes.find((c) => c.demo);
+
+// Adds the demo class if it isn't there and opens it, with the clock at 1:59 PM today.
+export function openDemo() {
+  const today = todayKey();
+  const existing = demoClass();
+  if (existing) {
+    // Keep the time of day it was left at, but on today's date so it lines up with Attendance.
+    const timeOfDay = state.demoClock == null ? '13:59' : hhmm(state.demoClock);
+    commit({ ...state, currentClassId: existing.id, demoClock: atTime(today, timeOfDay) });
+    return;
+  }
+  const cls = {
+    id: uid(),
+    name: 'Period 7 · DEMO',
+    demo: true,
+    startTime: '14:00',
+    lateMinutes: 5,
+    dayStarts: {},
+    students: DEMO_NAMES.map((name) => ({ id: uid(), name })),
+  };
+  commit({ ...state, classes: [...state.classes, cls], currentClassId: cls.id, demoClock: atTime(today, '13:59') });
+}
+
+// Returns an error message, or '' once the clock is set. It can't go back before a trip that already happened.
+export function setDemoClock(at) {
+  const cls = demoClass();
+  if (!cls || !Number.isFinite(at)) return 'Pick a time.';
+  const latest = Math.max(0, ...state.trips.filter((t) => t.classId === cls.id).map((t) => t.returnedAt ?? t.departedAt));
+  if (at < latest) return 'That is before a trip that already happened. Reset the demo to start over.';
+  commit({ ...state, demoClock: at });
+  return '';
+}
+
+// Removes the demo's attendance and trips and starts it again. Real classes are not touched.
+export function resetDemo() {
+  const cls = demoClass();
+  if (cls) deleteClass(cls.id);
+  openDemo();
 }
 
 // ---------- Kiosk ----------

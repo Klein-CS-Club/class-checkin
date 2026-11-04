@@ -4,7 +4,7 @@ import {
   restroomSummary, departureEligibility, requestRestroom, markOut, markReturned,
 } from '../store.js';
 import { matchesSearch } from '../names.js';
-import { escapeHtml, todayKey, time12 } from '../format.js';
+import { escapeHtml, time12 } from '../format.js';
 import { openModal } from '../modal.js';
 import { ruleText } from './restroom.js';
 
@@ -104,7 +104,7 @@ export function renderCheckin(el) {
       return;
     }
     if (mode === 'restroom') return renderRestroom();
-    const rows = dayRows(cls.id, todayKey());
+    const rows = dayRows(cls.id, todayFor(cls));
     el.querySelector('#count').textContent = `${rows.filter(isHere).length} of ${rows.length} checked in`;
 
     const matches = rows.filter((r) => matchesSearch(r.student.name, query));

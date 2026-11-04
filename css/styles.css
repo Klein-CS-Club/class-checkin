@@ -754,6 +754,11 @@ button.list-row:hover { background: var(--surface-2); }
 .tab:hover { color: var(--text-2); }
 .tab[aria-current="page"] { border-bottom-color: var(--primary); color: var(--text); }
 .tabs-brief { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.demo-controls { border-style: dashed; }
+.demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.demo-row .spacer { flex: 1; }
+.demo-row input[type="time"] { height: 40px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font: inherit; }
+.demo-error { margin: 0; padding: 0 16px 12px; }
 .trip-list .list-text { display: flex; flex-direction: column; gap: 2px; }
 .trip-list .list-row { flex-wrap: wrap; }
 
