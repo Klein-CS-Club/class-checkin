@@ -3,7 +3,8 @@ import {
   subscribe, classById, currentClass, dayRows, bellFor, startTimeFor, setDayStart, setOverride, markRestPresent,
   isFinalized, finalizeAttendance, undoFinalize, startKiosk, STATUSES,
 } from '../store.js';
-import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../format.js';
+import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel, parseTime } from '../format.js';
+import { showTimeHint } from './timeinput.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
 
@@ -145,8 +146,9 @@ function dayStartDialog(cls, date) {
         <form class="form" novalidate>
           <label class="field">
             <span>Start time</span>
-            <input name="time" type="time" value="${startTimeFor(cls, date)}" autofocus>
+            <input name="time" type="text" autocomplete="off" placeholder="8:00 AM" value="${escapeHtml(timeLabel(startTimeFor(cls, date)))}" autofocus>
           </label>
+          <p class="hint" id="time-hint"></p>
           <p class="hint">Only for this day. The usual start time is ${escapeHtml(timeLabel(cls.startTime))},
             and arrivals more than ${cls.lateMinutes} min after the start still count as late.</p>
           <p class="field-error" hidden></p>
@@ -159,13 +161,15 @@ function dayStartDialog(cls, date) {
         </form>`;
       const form = body.querySelector('form');
       const errorEl = form.querySelector('.field-error');
+      showTimeHint(form.time, form.querySelector('#time-hint'));
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        errorEl.hidden = !!form.time.value;
-        errorEl.textContent = 'Pick a start time.';
-        if (!form.time.value) return;
-        setDayStart(cls.id, date, form.time.value === cls.startTime ? null : form.time.value);
+        const time = parseTime(form.time.value);
+        errorEl.hidden = !!time;
+        errorEl.textContent = 'Type a start time like 8:00 AM.';
+        if (!time) return;
+        setDayStart(cls.id, date, time === cls.startTime ? null : time);
         close();
       });
 

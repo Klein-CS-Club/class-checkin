@@ -1,6 +1,7 @@
 import { icon } from '../icons.js';
 import { getState, subscribe, classById, sortedStudents, addClass, selectClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
-import { escapeHtml, timeLabel } from '../format.js';
+import { escapeHtml, timeLabel, parseTime } from '../format.js';
+import { showTimeHint } from './timeinput.js';
 import { namesFromCsv } from '../csv.js';
 import { openModal, confirmDialog } from '../modal.js';
 
@@ -84,8 +85,9 @@ export function classDialog(cls) {
           </label>
           <label class="field">
             <span>Start time</span>
-            <input name="startTime" type="time" value="${cls?.startTime ?? '08:00'}">
+            <input name="startTime" type="text" autocomplete="off" placeholder="8:00 AM" value="${timeLabel(cls?.startTime ?? '08:00')}">
           </label>
+          <p class="hint" id="start-hint"></p>
           <label class="field">
             <span>Late after (minutes)</span>
             <input name="lateMinutes" type="number" min="0" max="60" step="1" inputmode="numeric" value="${cls?.lateMinutes ?? 5}">
@@ -101,14 +103,15 @@ export function classDialog(cls) {
         </form>`;
       const form = body.querySelector('form');
       const errorEl = form.querySelector('.field-error');
+      showTimeHint(form.startTime, form.querySelector('#start-hint'));
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = form.name.value.trim();
-        const startTime = form.startTime.value;
+        const startTime = parseTime(form.startTime.value);
         const lateMinutes = Number(form.lateMinutes.value);
         const error = !name ? 'Give the class a name.'
-          : !startTime ? 'Pick a start time.'
+          : !startTime ? 'Type a start time like 8:00 AM.'
           : !Number.isInteger(lateMinutes) || lateMinutes < 0 || lateMinutes > 60 ? 'Late after must be 0 to 60 whole minutes.' : '';
         errorEl.textContent = error;
         errorEl.hidden = !error;
