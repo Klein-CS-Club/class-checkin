@@ -1,4 +1,4 @@
-import { todayKey, atTime } from './format.js';
+import { todayKey, dateKey, atTime, time12 } from './format.js';
 import { compareByName, sameName, tidyName } from './names.js';
 import { demoData } from './seed.js';
 
@@ -16,13 +16,18 @@ export const STATUSES = {
 
 function initialState() {
   return {
-    settings: { pin: '1234', sidebarExpanded: true },
+    // capacity: students allowed out at once. restrictionMinutes: no restroom trips this long after the start.
+    settings: { pin: '1234', sidebarExpanded: true, capacity: 1, restrictionMinutes: 10 },
     currentClassId: null, // the period picked in the sidebar
     // [{ id, name, startTime: 'HH:mm', lateMinutes, dayStarts: { date: 'HH:mm' }, students: [{ id, name }] }]
     classes: [],
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
     finalized: {},   // { 'classId|date': true } once the teacher has confirmed who is absent
+    // [{ id, sessionId, classId, studentId, departedAt: ms, returnedAt: ms | null, overrideReason }]
+    trips: [],
+    // Students waiting for the restroom, first come first served: [{ id, sessionId, classId, studentId, requestedAt: ms }]
+    queue: [],
     kiosk: null,     // { classId } while the check-in screen is locked on
   };
 }
@@ -104,6 +109,8 @@ export function deleteClass(id) {
     checkIns: state.checkIns.filter((x) => x.classId !== id),
     overrides: Object.fromEntries(Object.entries(state.overrides).filter(([k]) => !k.startsWith(`${id}|`))),
     finalized: Object.fromEntries(Object.entries(state.finalized).filter(([k]) => !k.startsWith(`${id}|`))),
+    trips: state.trips.filter((t) => t.classId !== id),
+    queue: state.queue.filter((q) => q.classId !== id),
     kiosk: state.kiosk?.classId === id ? null : state.kiosk,
   });
 }
@@ -134,6 +141,8 @@ export function removeStudent(classId, studentId) {
     ...state,
     classes: state.classes.map((c) => (c.id === classId ? { ...c, students: cls.students.filter((s) => s.id !== studentId) } : c)),
     checkIns: state.checkIns.filter((x) => !(x.classId === classId && x.studentId === studentId)),
+    trips: state.trips.filter((t) => t.studentId !== studentId),
+    queue: state.queue.filter((q) => q.studentId !== studentId),
     overrides: Object.fromEntries(
       Object.entries(state.overrides).filter(([k]) => !(k.startsWith(`${classId}|`) && k.endsWith(`|${studentId}`)))),
   });
@@ -247,6 +256,108 @@ export function markRestPresent(classId, date) {
     if (row.status === 'absent' || row.status === 'notyet') overrides[overrideKey(classId, date, row.student.id)] = 'present';
   }
   commit({ ...state, overrides });
+}
+
+// ---------- Restroom ----------
+// The queue and the trips are kept per session (one class on one date), like finalizing.
+// Requests and returns are always allowed. A student can leave once the class has started, the
+// opening restriction is over, there's a free slot, and nobody else is waiting ahead of them.
+// The teacher can override all of that except the date, with a reason that stays on the trip.
+
+export const nowFor = () => Date.now();
+export const todayFor = (cls) => dateKey(new Date(nowFor(cls.id)));
+
+// capacity: students out at once. restrictionMinutes: none may leave this long after the start.
+export const rulesFor = () => ({ capacity: state.settings.capacity, restrictionMinutes: state.settings.restrictionMinutes });
+
+const result = (kind, message) => ({ kind, message });
+
+// A student who is out right now, whichever day they left.
+const openTrip = (studentId) => state.trips.find((t) => t.studentId === studentId && t.returnedAt == null);
+
+export function restroomSummary(classId, date, at = nowFor(classId)) {
+  const sid = sessionId(classId, date);
+  const trips = state.trips.filter((t) => t.sessionId === sid);
+  const queue = state.queue.filter((q) => q.sessionId === sid);
+  const active = trips.filter((t) => t.returnedAt == null);
+  const completed = trips.filter((t) => t.returnedAt != null);
+  const completedMs = completed.reduce((sum, t) => sum + t.returnedAt - t.departedAt, 0);
+  const activeMs = active.reduce((sum, t) => sum + Math.max(0, at - t.departedAt), 0);
+  return {
+    trips, queue, active, completed, completedMs,
+    totalMs: completedMs + activeMs, // time out so far, including students who are still out
+    unique: new Set(trips.map((t) => t.studentId)).size,
+  };
+}
+
+// Why this student can't be on a restroom trip for this session at all. Empty when they can.
+function sessionProblem(classId, date, studentId) {
+  const cls = classById(classId);
+  if (!cls?.students.some((s) => s.id === studentId)) return 'That student isn’t on this class roster.';
+  if (date !== todayFor(cls)) return 'Restroom trips can only start on today’s date.';
+  return '';
+}
+
+// Why this student can't leave right now. Empty when they can.
+export function departureEligibility(classId, date, studentId, at = nowFor(classId)) {
+  const problem = sessionProblem(classId, date, studentId);
+  if (problem) return problem;
+  const cls = classById(classId);
+  const { capacity, restrictionMinutes } = rulesFor(cls);
+  const { startAt } = bellFor(cls, date);
+  if (at < startAt) return `Class starts at ${time12(startAt)}.`;
+  const opensAt = startAt + restrictionMinutes * 60000;
+  if (at < opensAt) return `Trips open at ${time12(opensAt)}.`;
+  const { active, queue } = restroomSummary(classId, date, at);
+  if (active.length >= capacity) return 'The restroom is full.';
+  if (queue.length && queue[0].studentId !== studentId) return 'Students ahead in the waitlist go first.';
+  return '';
+}
+
+// Sends the student out if they can go now, otherwise puts them on the waitlist.
+export function requestRestroom(classId, date, studentId) {
+  const problem = sessionProblem(classId, date, studentId);
+  if (problem) return result('error', problem);
+  if (openTrip(studentId)) return result('already', 'Already out.');
+  const sid = sessionId(classId, date);
+  if (state.queue.some((q) => q.sessionId === sid && q.studentId === studentId)) return result('already', 'Already on the waitlist.');
+  const reason = departureEligibility(classId, date, studentId);
+  if (!reason) return markOut(classId, date, studentId);
+  const entry = { id: uid(), sessionId: sid, classId, studentId, requestedAt: nowFor(classId) };
+  commit({ ...state, queue: [...state.queue, entry] });
+  return result('waiting', `Added to the waitlist. ${reason}`);
+}
+
+// Records a departure and takes the student off the waitlist. A reason makes it a teacher override.
+export function markOut(classId, date, studentId, reason = '') {
+  const problem = sessionProblem(classId, date, studentId);
+  if (problem) return result('error', problem);
+  if (openTrip(studentId)) return result('already', 'Already out.');
+  const overrideReason = reason.trim();
+  const blocked = departureEligibility(classId, date, studentId);
+  if (blocked && !overrideReason) return result('error', blocked);
+  const sid = sessionId(classId, date);
+  const trip = { id: uid(), sessionId: sid, classId, studentId, departedAt: nowFor(classId), returnedAt: null, overrideReason };
+  commit({
+    ...state,
+    trips: [...state.trips, trip],
+    queue: state.queue.filter((q) => !(q.sessionId === sid && q.studentId === studentId)),
+  });
+  return result('out', overrideReason ? 'Out, with a teacher override.' : 'Out.');
+}
+
+// Works on any date, so a trip left open on an earlier day can still be closed.
+export function markReturned(classId, date, studentId) {
+  const trip = restroomSummary(classId, date).active.find((t) => t.studentId === studentId);
+  if (!trip) return result('error', 'That student isn’t out for this class and date.');
+  const at = nowFor(classId);
+  if (at < trip.departedAt) return result('error', 'The return time would be before they left.');
+  commit({ ...state, trips: state.trips.map((t) => (t.id === trip.id ? { ...t, returnedAt: at } : t)) });
+  return result('returned', 'Back in class.');
+}
+
+export function cancelRequest(id) {
+  commit({ ...state, queue: state.queue.filter((q) => q.id !== id) });
 }
 
 // ---------- Kiosk ----------
