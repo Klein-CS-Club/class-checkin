@@ -37,7 +37,7 @@ export function renderCheckin(el) {
           <button class="btn-primary btn-xl" id="go" disabled>Check in</button>
           <div class="kiosk-undo" id="undo" hidden></div>
           <p class="kiosk-help" id="hint">Type your name, then press Enter.</p>
-          <p class="kiosk-help" id="rule" hidden></p>
+          <p class="restroom-rule" id="rule" hidden></p>
           <p class="kiosk-help">Can’t find your name? Tell your teacher.</p>
         </section>
         <section class="kiosk-list" id="list" aria-label="Class list"></section>
