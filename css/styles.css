@@ -648,6 +648,8 @@ button:disabled { cursor: not-allowed; }
   flex-direction: column;
   gap: 16px;
 }
+/* Panels clip their contents, so without this they shrink to fit instead of letting the page scroll. */
+.page-body > * { flex-shrink: 0; }
 
 .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
 .stat-card {
