@@ -16,6 +16,7 @@ const routes = [
 const views = {
   checkin: renderCheckin,
   attendance: renderAttendance,
+  restroom: renderAttendance,
   classes: renderClasses,
   settings: renderSettings,
 };
@@ -33,7 +34,7 @@ function renderNav() {
 function currentPath() {
   if (getState().kiosk) return 'checkin';
   const path = location.hash.replace(/^#\/?/, '');
-  return routes.some((r) => r.path === path) ? path : 'attendance';
+  return (path === 'restroom' || routes.some((r) => r.path === path)) ? path : 'attendance';
 }
 
 function route() {

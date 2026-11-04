@@ -1,3 +1,4 @@
+import { mountScanner } from './scanner.js';
 import { icon } from '../icons.js';
 import { getState, subscribe, classById, sortedStudents, checkIn, undoCheckIn, isCheckedIn, stopKiosk } from '../store.js';
 import { matchesSearch, firstName } from '../names.js';
@@ -25,11 +26,12 @@ export function renderCheckin(el) {
         </label>
       </div>
       <p class="sr-only" aria-live="polite" id="live"></p>
-      <div class="kiosk-list" id="list"></div>
+      <div id="kiosk-scanner"></div><p id="checkin-error" role="status"></p><div class="kiosk-list" id="list"></div>
       <p class="kiosk-foot">Can’t find your name? Tell your teacher.</p>
       <div class="greeting" id="greeting" hidden></div>
     </div>`;
 
+  mountScanner(el.querySelector('#kiosk-scanner'), {kiosk:true});
   const searchEl = el.querySelector('#search');
   const listEl = el.querySelector('#list');
   const liveEl = el.querySelector('#live');
@@ -108,7 +110,9 @@ export function renderCheckin(el) {
   // Only the button checks someone in, so scrolling can't cause an accidental check-in.
   function doCheckIn(student) {
     if (greeting || isCheckedIn(cls.id, student.id)) return;
-    showGreeting(student, checkIn(cls.id, student.id));
+    const result = checkIn(cls.id, student.id);
+    if (result.kind === 'error') { el.querySelector('#checkin-error').textContent = result.message; return; }
+    showGreeting(student, result);
   }
 
   listEl.addEventListener('click', (e) => {

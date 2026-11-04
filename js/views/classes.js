@@ -1,3 +1,5 @@
+import { scheduleDialog } from './schedule.js';
+import { showLabels } from './labels.js';
 import { icon } from '../icons.js';
 import { getState, subscribe, classById, sortedStudents, addClass, selectClass, updateClass, deleteClass, addStudents, renameStudent, removeStudent } from '../store.js';
 import { escapeHtml, timeLabel } from '../format.js';
@@ -25,17 +27,17 @@ export function renderClasses(el) {
             <div class="panel-head">
               <div>
                 <h2>${escapeHtml(c.name)}</h2>
-                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · Late after ${escapeHtml(timeLabel(c.lateAfter))}</div>
+                <div class="stat-sub">${c.students.length} student${c.students.length === 1 ? '' : 's'} · ${c.schedule ? 'Bell schedule configured' : 'Bell schedule needed'}</div>
               </div>
               <span class="spacer"></span>
-              <button class="btn-link" data-a="edit-class" data-class="${c.id}">${icon('edit')}Edit</button>
+              <button class="btn-link" data-a="schedule" data-class="${c.id}">Bell schedule</button><button class="btn-link" data-a="labels" data-class="${c.id}">Print barcode labels</button><button class="btn-link" data-a="edit-class" data-class="${c.id}">${icon('edit')}Edit</button>
               <button class="btn-link" data-a="add-students" data-class="${c.id}">${icon('plus')}Add students</button>
             </div>
             <div class="roster">
               ${c.students.length
                 ? sortedStudents(c).map((s) => `
                   <div class="list-row">
-                    <span class="list-text"><span class="list-title">${escapeHtml(s.name)}</span></span>
+                    <span class="list-text"><span class="list-title">${escapeHtml(s.name)}</span><span class="list-sub">${escapeHtml(s.scanId)}</span></span>
                     <button class="icon-btn" data-a="rename" data-class="${c.id}" data-student="${s.id}" aria-label="Rename ${escapeHtml(s.name)}">${icon('edit')}</button>
                     <button class="icon-btn danger" data-a="remove" data-class="${c.id}" data-student="${s.id}" aria-label="Remove ${escapeHtml(s.name)}">${icon('trash')}</button>
                   </div>`).join('')
@@ -52,6 +54,8 @@ export function renderClasses(el) {
     const cls = classById(t.dataset.class);
     if (!cls) return;
     const student = cls.students.find((s) => s.id === t.dataset.student);
+    if (t.dataset.a === 'schedule') return scheduleDialog(cls);
+    if (t.dataset.a === 'labels') return showLabels(cls);
     if (t.dataset.a === 'edit-class') classDialog(cls);
     else if (t.dataset.a === 'add-students') addStudentsDialog(cls);
     else if (t.dataset.a === 'rename' && student) renameDialog(cls, student);
@@ -83,7 +87,7 @@ export function classDialog(cls) {
             <input name="name" type="text" maxlength="60" autocomplete="off" placeholder="Period 1 · English 9" value="${escapeHtml(cls?.name ?? '')}" autofocus>
           </label>
           <label class="field">
-            <span>Late after</span>
+            <span>Legacy late cutoff (configure the bell schedule after saving)</span>
             <input name="lateAfter" type="time" value="${cls?.lateAfter ?? '08:00'}">
           </label>
           <p class="field-error" hidden></p>

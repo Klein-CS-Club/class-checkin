@@ -31,6 +31,13 @@ export function openModal({ title, className = '', dismissible = true, render })
   }
   function onKey(e) {
     if (e.key === 'Escape' && dismissible) close();
+    if (e.key === 'Tab') {
+      const controls=[...backdrop.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]')].filter(n=>n.getClientRects().length);
+      const first=controls[0],last=controls.at(-1);
+      if (!first) {e.preventDefault();return;}
+      if (e.shiftKey && (document.activeElement===first || !controls.includes(document.activeElement))) {e.preventDefault();last.focus();}
+      else if (!e.shiftKey && (document.activeElement===last || !controls.includes(document.activeElement))) {e.preventDefault();first.focus();}
+    }
   }
 
   document.addEventListener('keydown', onKey);
