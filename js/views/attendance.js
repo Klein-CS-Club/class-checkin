@@ -1,22 +1,37 @@
 import { icon } from '../icons.js';
 import {
   subscribe, classById, currentClass, dayRows, bellFor, startTimeFor, setDayStart, setOverride, markRestPresent,
-  isFinalized, finalizeAttendance, undoFinalize, startKiosk, STATUSES,
+  isFinalized, finalizeAttendance, undoFinalize, restroomSummary, startKiosk, STATUSES,
 } from '../store.js';
 import { escapeHtml, todayKey, addDays, dayLabel, time12, timeLabel } from '../format.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
+import { restroomHtml, refreshRestroomLive, handleRestroomClick, clearRestroomNotice } from './restroom.js';
 
 let date = todayKey();
 
 const SEG = [['present', 'P'], ['late', 'L'], ['absent', 'A']];
 
+// The Attendance and Restroom tabs share the class and date picked in the sidebar and header.
+function tabsHtml(cls, restroom) {
+  const { active, queue } = restroomSummary(cls.id, date);
+  const tab = (href, label, on) => `<a class="tab" href="${href}"${on ? ' aria-current="page"' : ''}>${label}</a>`;
+  return `
+    <nav class="tabs" aria-label="Class view">
+      ${tab('#/attendance', 'Attendance', !restroom)}
+      ${tab('#/restroom', 'Restroom', restroom)}
+      <span class="tabs-brief">Out: ${active.length} · Waiting: ${queue.length}</span>
+    </nav>`;
+}
+
 export function renderAttendance(el) {
+  const restroom = location.hash === '#/restroom';
+  clearRestroomNotice();
   el.innerHTML = `
     <div class="page">
       <header class="page-head">
         <div class="page-title">
-          <small>Attendance</small>
+          <small id="eyebrow">Attendance</small>
           <h1 id="title">Attendance</h1>
         </div>
         <span class="spacer"></span>
@@ -39,6 +54,8 @@ export function renderAttendance(el) {
     const cls = currentClass();
     el.querySelector('#title').textContent = cls?.name ?? 'Attendance';
     dateEl.value = date;
+    el.querySelector('#eyebrow').textContent = restroom ? 'Restroom' : 'Attendance';
+    el.querySelector('#export').hidden = restroom;
     el.querySelector('#export').disabled = !cls;
     el.querySelector('#kiosk').disabled = !cls;
     if (!cls) {
@@ -48,10 +65,16 @@ export function renderAttendance(el) {
         </div></section>`;
       return;
     }
+    const tabs = tabsHtml(cls, restroom);
+    if (restroom) {
+      bodyEl.innerHTML = tabs + restroomHtml(cls, date);
+      refreshRestroomLive(bodyEl, cls, date);
+      return;
+    }
     const rows = dayRows(cls.id, date);
     const count = (s) => rows.filter((r) => r.status === s).length;
     const isToday = date === todayKey();
-    bodyEl.innerHTML = `
+    bodyEl.innerHTML = tabs + `
       <div class="stats-row">
         ${['present', 'late', 'absent', 'notyet'].map((s) => `
           <div class="stat-card">
@@ -96,6 +119,7 @@ export function renderAttendance(el) {
   el.querySelector('.page').addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if (!t) return;
+    if (handleRestroomClick(t, currentClass(), date, render)) return;
     if (t.dataset.step) {
       date = addDays(date, Number(t.dataset.step));
       render();
@@ -131,7 +155,13 @@ export function renderAttendance(el) {
   });
 
   render();
-  return subscribe(render);
+  const unsubscribe = subscribe(render);
+  // Keeps the restroom timers and button states current between changes.
+  const timer = setInterval(() => {
+    const cls = currentClass();
+    if (restroom && cls) refreshRestroomLive(bodyEl, cls, date);
+  }, 1000);
+  return () => { unsubscribe(); clearInterval(timer); };
 }
 
 // A different start time for one date, such as an assembly or a shortened day.

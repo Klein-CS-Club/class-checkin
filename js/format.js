@@ -25,6 +25,12 @@ export const atTime = (date, hm) => new Date(`${date}T${hm}:00`).getTime();
 // "8:05 AM"
 export const time12 = (ms) => new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
+// 125000 → "2m 05s"
+export const duration = (ms) => {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(sec / 60)}m ${pad(sec % 60)}s`;
+};
+
 // "08:05" → "8:05 AM"
 export const timeLabel = (hm) => time12(new Date(`2000-01-01T${hm}:00`).getTime());
 

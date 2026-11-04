@@ -49,6 +49,7 @@
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -743,6 +744,15 @@ button.list-row:hover { background: var(--surface-2); }
   .status-cell { flex-wrap: wrap-reverse; }
   .edited-undo { order: 1; }
 }
+/* ---------- Attendance and Restroom tabs ---------- */
+.tabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--border-strong); }
+.tab { margin-bottom: -1px; padding: 10px 16px; border-bottom: 3px solid transparent; color: var(--muted); font-weight: 500; text-decoration: none; }
+.tab:hover { color: var(--text-2); }
+.tab[aria-current="page"] { border-bottom-color: var(--primary); color: var(--text); }
+.tabs-brief { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.trip-list .list-text { display: flex; flex-direction: column; gap: 2px; }
+.trip-list .list-row { flex-wrap: wrap; }
+
 /* ---------- Settings ---------- */
 .settings { align-items: stretch; }
 .settings .panel { width: 100%; max-width: 640px; margin: 0 auto; }
