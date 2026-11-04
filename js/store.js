@@ -377,6 +377,10 @@ export function setPin(pin) {
   commit({ ...state, settings: { ...state.settings, pin } });
 }
 
+export function setRestroomRules(capacity, restrictionMinutes) {
+  commit({ ...state, settings: { ...state.settings, capacity, restrictionMinutes } });
+}
+
 export function setSidebarExpanded(sidebarExpanded) {
   commit({ ...state, settings: { ...state.settings, sidebarExpanded } });
 }
