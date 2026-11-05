@@ -790,13 +790,34 @@ button.list-row:hover { background: var(--surface-2); }
 .trip-list .list-row { flex-wrap: wrap; }
 
 /* ---------- Settings ---------- */
-.settings { align-items: stretch; }
-.settings .panel { width: 100%; max-width: 640px; margin: 0 auto; }
-.settings .form.panel-body { padding: 16px; }
-.saved-note { display: inline-flex; align-items: center; gap: 4px; color: var(--present); animation: fade-in var(--med) var(--ease); }
+.settings { width: 100%; max-width: 920px; margin: 0 auto; gap: 48px; padding-top: 32px; }
+.settings-section { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 30px; align-items: start; }
+.settings-label { margin: 0; padding-top: 2px; font-size: 14px; font-weight: 500; }
+.settings-main { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); overflow: hidden; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.setting-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.setting-title { font-size: 14px; font-weight: 600; }
+.setting-sub { margin: 0; color: var(--muted); font-size: 12px; }
+.setting-row input { flex: none; width: 96px; height: 40px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); font-size: 15px; text-align: right; }
+.setting-row input:focus { border-color: var(--info); box-shadow: 0 0 0 3px var(--info-soft); outline: 0; }
+.setting-control { display: flex; align-items: center; gap: 8px; }
+.setting-unit { color: var(--muted); font-size: 13px; }
+.settings-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 20px; }
+.settings-foot-start { justify-content: flex-start; }
+.settings-foot .field-error { margin: 0; }
+.settings-foot .btn-primary, .settings-main .btn-secondary, .settings-main .btn-danger { height: 38px; padding: 0 16px; font-size: 14px; flex: none; }
+.settings-main .btn-secondary, .settings-main .btn-danger { cursor: pointer; }
+.settings-main .icon { width: 16px; height: 16px; }
+.settings-main > :last-child { border-bottom: 0; }
+.settings-main > .setting-row:has(+ .settings-foot) { border-bottom: 0; padding-bottom: 4px; }
+.settings-plain { display: grid; justify-items: start; gap: 12px; padding: 0; border: 0; background: none; box-shadow: none; }
+.settings-plain .btn-danger { background: var(--danger-soft); color: var(--absent); }
+.settings-plain .btn-danger:hover { background: var(--absent); color: #fff; }
+.saved-note { display: inline-flex; align-items: center; gap: 4px; color: var(--present); font-size: 13px; animation: fade-in var(--med) var(--ease); }
 .saved-note[hidden] { display: none; }
 .saved-note .icon { width: 14px; height: 14px; }
-.danger-zone .list-row { padding: 14px 16px; }
-.danger-zone .list-text { display: flex; flex-direction: column; gap: 2px; }
-.danger-zone .list-title { white-space: normal; }
-.danger-zone .btn-secondary, .danger-zone .btn-danger { height: 38px; padding: 0 16px; font-size: 14px; flex: none; }
+@media (max-width: 900px) {
+  .settings-section { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .setting-row { flex-wrap: wrap; }
+  .setting-text { flex-basis: 220px; }
+}

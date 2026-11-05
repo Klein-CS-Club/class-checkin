@@ -5,84 +5,99 @@ import { downloadFile } from '../csv.js';
 import { todayKey } from '../format.js';
 
 export function renderSettings(el) {
+  const { settings } = getState();
   el.innerHTML = `
     <div class="page">
       <header class="page-head"><h1>Settings</h1></header>
       <div class="page-body settings">
-        <section class="panel">
-          <div class="panel-head"><h2>Teacher PIN</h2><span class="stat-sub saved-note" id="saved" hidden>${icon('check')}Saved</span></div>
-          <form class="form panel-body" id="pin-form" novalidate>
-            <p class="hint">Students can’t leave the check-in screen without this PIN. It only stops casual tapping;
-              anyone with the device can still clear its data.</p>
-            <label class="field">
-              <span>New 4-digit PIN</span>
+        <section class="settings-section">
+          <h2 class="settings-label">Teacher PIN</h2>
+          <form class="settings-main" id="pin-form" novalidate>
+            <label class="setting-row">
+              <span class="setting-text">
+                <span class="setting-title">New 4-digit PIN</span>
+                <span class="setting-sub">Students can’t leave the check-in screen without it. It only stops casual tapping;
+                  anyone with the device can still clear its data.</span>
+              </span>
               <input name="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••">
             </label>
-            <p class="field-error" hidden></p>
-            <div class="modal-actions">
+            <div class="settings-foot">
+              <p class="field-error" hidden></p>
+              <span class="saved-note" id="saved" hidden>${icon('check')}Saved</span>
               <button type="submit" class="btn-primary">Save PIN</button>
             </div>
           </form>
         </section>
-        <section class="panel">
-          <div class="panel-head"><h2>Restroom</h2><span class="stat-sub saved-note" id="rules-saved" hidden>${icon('check')}Saved</span></div>
-          <form class="form panel-body" id="rules-form" novalidate>
-            <p class="hint">Students who can’t go yet wait on the waitlist, and the first in line goes when it’s their turn.
-              With 10 minutes, no one goes in the first 10 or the last 10 minutes of class. The last minutes only apply
-              to classes that have an end time.</p>
-            <label class="field">
-              <span>Students out at once</span>
-              <input name="capacity" type="number" min="1" max="50" step="1" inputmode="numeric" value="${getState().settings.capacity}">
+        <section class="settings-section">
+          <h2 class="settings-label">Restroom</h2>
+          <form class="settings-main" id="rules-form" novalidate>
+            <label class="setting-row">
+              <span class="setting-text">
+                <span class="setting-title">Students out at once</span>
+                <span class="setting-sub">Anyone who can’t go yet joins the waitlist, and the first in line goes when it’s their turn.</span>
+              </span>
+              <input name="capacity" type="number" min="1" max="50" step="1" inputmode="numeric" value="${settings.capacity}">
             </label>
-            <label class="field">
-              <span>No trips in the first and last (minutes of class)</span>
-              <input name="minutes" type="number" min="0" max="120" step="1" inputmode="numeric" value="${getState().settings.restrictionMinutes}">
+            <label class="setting-row">
+              <span class="setting-text">
+                <span class="setting-title">No trips at the start and end of class</span>
+                <span class="setting-sub">With 10 minutes, no one goes in the first or last 10 minutes of class. The end only applies
+                  to classes that have an end time. Use 0 to allow trips from the start.</span>
+              </span>
+              <span class="setting-control">
+                <input name="minutes" type="number" min="0" max="120" step="1" inputmode="numeric" value="${settings.restrictionMinutes}">
+                <span class="setting-unit">min</span>
+              </span>
             </label>
-            <p class="field-error" hidden></p>
-            <div class="modal-actions">
+            <div class="settings-foot">
+              <p class="field-error" hidden></p>
+              <span class="saved-note" id="rules-saved" hidden>${icon('check')}Saved</span>
               <button type="submit" class="btn-primary">Save</button>
             </div>
           </form>
         </section>
-        <section class="panel danger-zone">
-          <div class="panel-head"><h2>Data</h2><span class="stat-sub">Stored on this device only</span></div>
-          <div class="list-row">
-            <span class="list-text">
-              <span class="list-title">Download backup</span>
-              <span class="list-sub">Saves your classes, rosters, attendance, restroom trips and settings to a file. Clearing this browser’s data
-                erases them, so download a new backup after you change rosters.</span>
-            </span>
-            <button class="btn-secondary" id="backup">Download backup</button>
+        <section class="settings-section">
+          <h2 class="settings-label">Data</h2>
+          <div class="settings-main">
+            <div class="setting-row">
+              <span class="setting-text">
+                <span class="setting-title">Stored on this device only</span>
+                <span class="setting-sub">A backup saves your classes, rosters, attendance, restroom trips and settings to a file.
+                  Clearing this browser’s data erases them, so download a new backup after you change rosters.</span>
+              </span>
+            </div>
+            <div class="settings-foot settings-foot-start">
+              <button class="btn-secondary" id="backup">${icon('download')}Download backup</button>
+              <label class="btn-secondary file-btn">${icon('upload')}Restore backup<input type="file" accept=".json,application/json" hidden></label>
+              <span id="restore-msg" hidden></span>
+            </div>
           </div>
-          <div class="list-row">
-            <span class="list-text">
-              <span class="list-title">Restore from backup</span>
-              <span class="list-sub">Replaces everything on this device with a backup file.</span>
-              <span class="field-error" id="restore-msg" hidden></span>
-            </span>
-            <label class="btn-secondary file-btn">Restore<input type="file" accept=".json,application/json" hidden></label>
+        </section>
+        <section class="settings-section">
+          <h2 class="settings-label">Demo</h2>
+          <div class="settings-main">
+            <div class="setting-row">
+              <span class="setting-text">
+                <span class="setting-title">Load demo classes</span>
+                <span class="setting-sub">Replaces your classes and attendance with three made-up classes and a week of history. Keeps the PIN.</span>
+              </span>
+              <button class="btn-secondary" data-reset="demo">Load demo</button>
+            </div>
+            <div class="setting-row">
+              <span class="setting-text">
+                <span class="setting-title">Period 7 demo</span>
+                <span class="setting-sub">Adds a made-up Period 7 with a clock you set yourself, to try the restroom rules without waiting
+                  for the bell. Your classes and records are not touched.</span>
+              </span>
+              <button class="btn-secondary" data-p7>Open demo</button>
+            </div>
           </div>
-          <div class="list-row">
-            <span class="list-text">
-              <span class="list-title">Load demo classes</span>
-              <span class="list-sub">Replaces your classes and attendance with three made-up classes and a week of history. Keeps the PIN.</span>
-            </span>
-            <button class="btn-secondary" data-reset="demo">Load demo</button>
-          </div>
-          <div class="list-row">
-            <span class="list-text">
-              <span class="list-title">Period 7 demo</span>
-              <span class="list-sub">Adds a made-up Period 7 with a clock you set yourself, to try the restroom rules without waiting
-                for the bell. Your classes and records are not touched.</span>
-            </span>
-            <button class="btn-secondary" data-p7>Open Period 7 demo</button>
-          </div>
-          <div class="list-row">
-            <span class="list-text">
-              <span class="list-title">Erase everything</span>
-              <span class="list-sub">Removes every class, student and check-in, and sets the PIN back to 1234.</span>
-            </span>
-            <button class="btn-danger" data-reset="all">Erase all</button>
+        </section>
+        <section class="settings-section">
+          <h2 class="settings-label">Erase data</h2>
+          <div class="settings-main settings-plain">
+            <p class="setting-sub">Removes every class, student and check-in, and sets the PIN back to 1234.</p>
+            <button class="btn-danger" data-reset="all">${icon('trash')}Erase all data</button>
           </div>
         </section>
       </div>
@@ -160,7 +175,7 @@ export function renderSettings(el) {
     restoreMsg.hidden = false;
   }
 
-  el.querySelector('.danger-zone').addEventListener('click', async (e) => {
+  el.querySelector('.settings').addEventListener('click', async (e) => {
     if (e.target.closest('[data-p7]')) {
       openDemo();
       location.hash = '#/restroom';
