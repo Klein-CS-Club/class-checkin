@@ -17,6 +17,10 @@ export function mountSidebar() {
   const periodsEl = document.getElementById('periods');
   toggle.innerHTML = icon('sidebar');
 
+  // Attendance (and its Restroom tab) is the page that shows the selected period, so the period is lit
+  // there and nowhere else. Every other page (Classes, Settings) leaves it dark.
+  const showsPeriod = () => !/^#\/(classes|settings)$/.test(location.hash);
+
   function renderLayout() {
     const rail = narrowQuery.matches || !getState().settings.sidebarExpanded;
     app.classList.toggle('rail', rail);
@@ -28,7 +32,7 @@ export function mountSidebar() {
   }
 
   function renderPeriods() {
-    const current = currentClass();
+    const current = showsPeriod() ? currentClass() : null;
     periodsEl.innerHTML = getState().classes.map((c) => {
       const here = hereToday(c.id);
       const total = c.students.length;
@@ -55,6 +59,7 @@ export function mountSidebar() {
   });
 
   narrowQuery.addEventListener('change', renderLayout);
+  window.addEventListener('hashchange', renderPeriods);
   subscribe(() => { renderLayout(); renderPeriods(); });
   renderLayout();
   renderPeriods();
