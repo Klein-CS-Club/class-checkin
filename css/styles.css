@@ -389,6 +389,7 @@ button:disabled { cursor: not-allowed; }
 }
 .page-head button:disabled { opacity: .4; }
 .student-name { font-weight: 500; }
+.student-name.away { color: var(--muted); }
 .table .status-col { text-align: right; }
 .status-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .status-text { min-width: 56px; font-size: 13px; font-weight: 600; text-align: left; }

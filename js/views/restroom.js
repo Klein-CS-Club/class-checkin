@@ -1,6 +1,6 @@
 import {
   restroomSummary, departureEligibility, closingProblem, rulesFor, requestRestroom, markOut, markReturned,
-  cancelRequest, sortedStudents, todayFor, nowFor, bellFor,
+  cancelRequest, sortedStudents, todayFor, nowFor, bellFor, statusFor,
 } from '../store.js';
 import { escapeHtml, duration, time12 } from '../format.js';
 import { openModal } from '../modal.js';
@@ -82,9 +82,11 @@ export function restroomHtml(cls, date) {
       action = `<button class="btn-link" data-r="override" data-student="${s.id}">Override</button>
         <button class="btn-secondary" data-r="request" data-student="${s.id}">Send out</button>`;
     }
+    // Not checked in (or absent): the name is grayed so it's clear who isn't in the room.
+    const away = ['notyet', 'absent'].includes(statusFor(cls, date, s.id));
     return `
       <tr>
-        <td class="student-name">${escapeHtml(s.name)}</td>
+        <td class="student-name${away ? ' away' : ''}">${escapeHtml(s.name)}</td>
         <td class="tabular muted" data-label="Trips">${sum.trips.filter((t) => t.studentId === s.id).length}</td>
         <td class="tabular muted" data-label="Time out" data-out-for="${s.id}">${duration(msOut(sum, s.id, at))}</td>
         <td class="status-col"><div class="status-cell">${action}</div></td>
