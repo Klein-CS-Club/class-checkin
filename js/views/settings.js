@@ -102,7 +102,7 @@ export function renderSettings(el) {
             <div class="setting-row">
               <span class="setting-text">
                 <span class="setting-title">Contact the computer science club</span>
-                <span class="setting-sub">Email us if something breaks or you need a hand. Please don’t include student names.</span>
+                <span class="setting-sub">Email us if something breaks or you need a hand.</span>
                 <span class="setting-sub support-email">${SUPPORT_EMAIL}</span>
               </span>
             </div>
