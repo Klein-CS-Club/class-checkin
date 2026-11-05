@@ -4,6 +4,9 @@ import { confirmDialog } from '../modal.js';
 import { downloadFile } from '../csv.js';
 import { todayKey } from '../format.js';
 
+const SUPPORT_EMAIL = 'kleinhscompsciclub@gmail.com';
+const SUPPORT_HREF = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Class check-in support')}`;
+
 export function renderSettings(el) {
   const { settings } = getState();
   el.innerHTML = `
@@ -94,6 +97,23 @@ export function renderSettings(el) {
           </div>
         </section>
         <section class="settings-section">
+          <h2 class="settings-label">Support</h2>
+          <div class="settings-main">
+            <div class="setting-row">
+              <span class="setting-text">
+                <span class="setting-title">Contact the computer science club</span>
+                <span class="setting-sub">Email us if something breaks or you need a hand. Please don’t include student names.</span>
+                <span class="setting-sub support-email">${SUPPORT_EMAIL}</span>
+              </span>
+            </div>
+            <div class="settings-foot settings-foot-start">
+              <a class="btn-secondary" href="${SUPPORT_HREF}">${icon('mail')}Email the club</a>
+              <button class="btn-secondary" id="copy-email">${icon('copy')}Copy address</button>
+              <span id="copy-msg" class="saved-note" hidden>Copied</span>
+            </div>
+          </div>
+        </section>
+        <section class="settings-section">
           <h2 class="settings-label">Erase data</h2>
           <div class="settings-main settings-plain">
             <p class="setting-sub">Removes every class, student and check-in, and sets the PIN back to 1234.</p>
@@ -174,6 +194,19 @@ export function renderSettings(el) {
     restoreMsg.textContent = text;
     restoreMsg.hidden = false;
   }
+
+  const copyMsg = el.querySelector('#copy-msg');
+  el.querySelector('#copy-email').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
+      copyMsg.className = 'saved-note';
+      copyMsg.textContent = 'Copied';
+    } catch {
+      copyMsg.className = 'field-error';
+      copyMsg.textContent = 'Couldn’t copy. Select the address above instead.';
+    }
+    copyMsg.hidden = false;
+  });
 
   el.querySelector('.settings').addEventListener('click', async (e) => {
     if (e.target.closest('[data-p7]')) {

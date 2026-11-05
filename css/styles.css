@@ -807,6 +807,8 @@ button.list-row:hover { background: var(--surface-2); }
 .settings-foot .field-error { margin: 0; }
 .settings-foot .btn-primary, .settings-main .btn-secondary, .settings-main .btn-danger { height: 38px; padding: 0 16px; font-size: 14px; flex: none; }
 .settings-main .btn-secondary, .settings-main .btn-danger { cursor: pointer; }
+.settings-main a.btn-secondary { text-decoration: none; }
+.support-email { color: var(--text); font-size: 13px; user-select: all; }
 .settings-main .icon { width: 16px; height: 16px; }
 .settings-main > :last-child { border-bottom: 0; }
 .settings-main > .setting-row:has(+ .settings-foot) { border-bottom: 0; padding-bottom: 4px; }
