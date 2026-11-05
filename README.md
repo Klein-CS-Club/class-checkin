@@ -109,7 +109,7 @@ The first run loads three demo classes with made-up names and a week of history.
 | `js/format.js` | Local dates (`YYYY-MM-DD`), times, durations, `escapeHtml` |
 | `js/seed.js` | Demo classes, made-up names only |
 | `js/modal.js`, `js/icons.js` | Modal, confirm dialog and inline SVG icons from the cash register |
-| `js/views/*.js` | Sidebar, check-in kiosk, Attendance, Restroom tab, Classes, Settings |
+| `js/views/*.js` | Sidebar, check-in kiosk, Attendance, Restroom tab, Classes, Settings. The club support email is `SUPPORT_EMAIL` in `settings.js` |
 | `tests/store.test.js` | Tests for the store: late times, finalizing, restroom rules, backup. Run `node --test` |
 | `package.json` | Only tells Node the files are modules so the tests can load them; there are no dependencies |
 

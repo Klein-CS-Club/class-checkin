@@ -36,7 +36,7 @@ A single-classroom tool that never sends student names anywhere. Everything live
 - **Everything stays local.** No backend, database, sync, accounts, analytics, third-party scripts or fonts. The page makes no network requests and student names never leave the device.
 - Scope stays minimal: check-in, the day's attendance, restroom trips and the waitlist, classes/rosters, settings. No range views, per-student history, charts or reports. No barcodes, school timezone setting or weekly bell schedules; times use the device's clock.
 - The kiosk shows check-in times but never late status to students.
-- Pages: kiosk (`#/checkin`, with Check in and Restroom tabs), Attendance (`#/attendance`) and its Restroom tab (`#/restroom`), Classes (`#/classes`), Settings (`#/settings`), plus a collapsible sidebar (260px or a 64px icon rail; phones always get the rail).
+- Pages: kiosk (`#/checkin`, with Check in and Restroom tabs), Attendance (`#/attendance`) and its Restroom tab (`#/restroom`), Classes (`#/classes`), Settings (`#/settings`, including a Support section with the computer science club's email as a `mailto:` link, never on the kiosk), plus a collapsible sidebar (260px or a 64px icon rail; phones always get the rail).
 
 ## Brand Commitments
 
