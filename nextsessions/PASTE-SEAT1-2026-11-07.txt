@@ -1,0 +1,46 @@
+(Start this session in PLAN MODE: read, make the plan, ask what you need, then wait for approval.)
+You are class-checkin seat 1, DATA AND RULES (saved state, migrations, backup/restore, demo data), model opus (high). Folder: ~/dev/class-checkin.
+
+FIRST: set_summary "class-checkin 1: data and rules", join_room room_name "class-checkin" (create_room it if it does not exist yet), check_messages (read ALL). Then read ONLY, from seats (git show seats:<path>; the main checkout is stale on purpose): README.md, PRODUCT.md, js/store.js, js/seed.js, tests/store.test.js, and docs/HANDOFF.md (newest section: what landed, what is open, Nam's decisions).
+
+RULES:
+1. **Branch.** All work happens on the branch `seats`, which already exists and was cut from `main`. Seats never commit to `main`, never switch the main checkout's branch, and never push (I push). The main checkout at `~/dev/class-checkin` stays on `main` and is stale on purpose; read files with `git show seats:<path>`. A push to `main` can deploy to the live site (this folder is linked to Vercel), so nothing here goes near it. Never use Vercel tools, the Vercel CLI, or anything that deploys, links or changes the project. Never open or print `.env*` or `.vercel/`.
+2. **Real data must survive.** The live app stores everything under the `localStorage` key `class-checkin-v1` (backup copy: `class-checkin-v1-backup`). Any change to the saved shape must be backward compatible: new fields are optional with a safe default, old saves and old backup files still load and restore, the key is never renamed or deleted, nothing clears or reseeds existing data, and demo data only loads when there is no data. A change to what `store.js` saves or loads needs a test that loads an old-shaped save and checks nothing is lost. Only `store.js` touches `localStorage`.
+3. **Stay local.** No network requests, analytics, third-party scripts or fonts. Student names never leave the device. Use made-up names only in tests, docs, handoffs and commit messages; never a real student name.
+4. **Own port.** Each seat runs its own server: seat 1 `python3 serve.py 8131`, seat 2 `8132`, and so on. A port is a separate origin with its own empty `localStorage`, so testing never touches real data. Shut your server down at the end.
+5. **Own worktree.** `git worktree add --detach <dir> seats` in your scratchpad. Commit only with `scripts/private-commit.sh <worktree> <the sha your worktree sits on> <message file> <file paths>`, then `scripts/worktree-sync.sh <worktree>`. Both default to the `seats` branch. A REFUSED "changed on seats since" means stash only those files, `git checkout --detach seats`, pop, resolve, run `node --test`, commit against the new sha. Commit messages are Conventional Commits (`type(scope): short imperative`, lowercase, about 50 chars), one change per commit.
+6. **Merging is mine.** When a round is done, a seat reports the `seats` shas. I review and merge into `main` and push myself.
+- Run the server and the scripts from YOUR worktree (`scripts/` exists only on `seats`), so you test your own code.
+- `node --test` before any commit that touches store.js, format.js, csv.js or names.js; not after every edit.
+- No agents, forks or workflows. git grep; read sections, not whole files.
+- Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
+- Short bullets, simple words. Hand off before you run out of context.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. Nam sees UI changes on localhost before they are committed.
+
+LANES (one owner per file; ask the owner in the room, never edit their file):
+- Seat 1: js/store.js, js/seed.js, tests/store.test.js
+- Seat 2: js/views/checkin.js, js/app.js (no work this round)
+- Seat 3: js/views/attendance.js, restroom.js, classes.js, timeinput.js, new js/views/history.js
+- Seat 4: css/styles.css, index.html, js/icons.js, js/modal.js, js/views/sidebar.js
+- Seat 5: js/views/settings.js, js/csv.js, js/names.js, js/format.js, tests/format.test.js, new tests/csv.test.js
+- Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md
+- Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
+
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+
+DECIDED IN ROUND 1 (2026-11-07, Nam): click a name on the teacher pages → a modal with that student's attendance days and restroom trips (no charts; never on the kiosk); Restroom tab Export CSV, one row per trip; students get an optional `addedOn` so history starts the day they joined. Charts, range views and reports are still out.
+
+STATE (read `git log seats -15` and docs/HANDOFF.md first; round 1 shas may already be merged to main by Nam):
+Mine on seats, round 1: 16a0fd6 feat(store): add a read-only student history · 9643306 test(store): read history from old saves and backups · 6887c93 feat(seed): add past restroom trips to the demo · a30006d feat(store): start history from the day a student joined. Tests were 39, all passing.
+Your files:
+- js/store.js: all state and actions; the only `localStorage` code. `studentHistory(classId, studentId)` → `{ cls, student, days: [{ date, status, checkIn, minutesLate, overridden }], trips: [{ id, date, departedAt, returnedAt, overrideReason }], counts }` or null; days are class days ≤ today and ≥ `student.addedOn` (if set). Students: `{ id, name, addedOn? }`.
+- js/seed.js: three made-up classes, 5 past school days of check-ins (218) and 41 finished restroom trips (separate rng stream).
+- tests/store.test.js: late times, finalizing, restroom rules, student history, demo, backups, old saves.
+Open from round 1: Attendance's past days still show a late-joining student as Absent before `addedOn` (only history skips them); ask Nam before changing statusFor.
+
+JOBS, in this order:
+ 0. Baseline: `node --test` (all pass); `python3 serve.py 8131` from your worktree; Attendance, Restroom tab (‹ to a past day shows demo trips), click a name → history, Settings → Download backup → Restore. Note anything broken; yours → fix, else post to its owner.
+ 1. Whatever Nam asks for this round that touches saved state, migrations, backup/restore or demo data. Saved-shape changes: optional field, safe default, an old-save test, post first.
+ 2. Anything the room asks of the data lane.
+
+END: post your HANDOFF section in the room headed "HANDOFF seat 1" (what landed with shas, what's open; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with your `seats` shas and what other seats must know. Write your next prompt as nextsessions/PASTE-SEAT1-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last) and run scripts/worktree-sync.sh <worktree>. Server shut down.
