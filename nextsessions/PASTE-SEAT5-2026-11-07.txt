@@ -28,12 +28,12 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 
 ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
-STATE (end of round 1, 2026-11-07): `seats` has seat 5's b5bb6d6 feat(csv): add restroom export rows (RESTROOM_HEADER and restroomRows(cls, date, trips) in js/csv.js, 5 tests in tests/csv.test.js, 43 pass at that point). Seat 3 wires the Export CSV button on the Restroom tab to it. Read `git log seats -15` and docs/HANDOFF.md for the rest.
+STATE (end of round 2, 2026-11-07): `seats` has seat 5's b5bb6d6 feat(csv) restroom export rows, and 72389af test(csv): round-trip names with commas and quotes (node --test 47 pass at that point). Seat 3's Restroom Export CSV button is on `seats` and was checked end to end in round 2: `restroom-period-1-english-9-2026-11-05.csv`, BOM, CRLF, 8 columns, a student with two trips is Trip 1 and Trip 2, a trip still out has empty Back and Minutes out, odd names (comma, quote, accent, line break, leading "=") read back the same in Python's csv module. Attendance export writes a late joiner's past day as "Not added yet" (seat 3 checked; no csv.js change). Read `git log seats -15` and docs/HANDOFF.md for the rest.
 
 JOBS, in this order:
- 0. Baseline: `node --test`; `python3 serve.py 8135` from your worktree; Settings (PIN, restroom rules, Open Period 7 demo, Download backup, Restore it). Note anything broken; yours → fix, else post to its owner.
- 1. Check the restroom export end to end once seat 3's button is on `seats`: Load demo, go to a past day with trips (a student has two trips in one day), press Export CSV on the Restroom tab, open the file in a spreadsheet. Expect the BOM to be fine, filename `restroom-<slug>-<date>.csv`, columns as in the contract, a trip still out has empty Back and Minutes out. Anything wrong in csv.js → fix it with a test; anything in the button → tell seat 3.
- 2. Anything the room hands this seat (a date or time helper, name search, Settings copy). Post the name before adding it.
+ 0. Baseline: `node --test`; `python3 serve.py 8135` from your worktree; Settings (PIN, restroom rules, Open Period 7 demo, Download backup, Restore it). Note anything broken; yours -> fix, else post to its owner.
+ 1. Anything the room hands this seat (a date or time helper, name search, Settings copy). Post the name before adding it.
+ Not for seats: opening a restroom CSV and an attendance CSV in Sheets or Excel is on Nam's list in OPEN-ASKS ("For Nam"). Seats can only read the bytes.
 
 BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
