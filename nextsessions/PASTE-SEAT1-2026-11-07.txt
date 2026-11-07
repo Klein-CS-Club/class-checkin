@@ -31,12 +31,12 @@ ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in s
 DECIDED IN ROUND 1 (2026-11-07, Nam): click a name on the teacher pages → a modal with that student's attendance days and restroom trips (no charts; never on the kiosk); Restroom tab Export CSV, one row per trip; students get an optional `addedOn` so history starts the day they joined. Charts, range views and reports are still out.
 
 STATE (read `git log seats -15` and docs/HANDOFF.md first; round 1 shas may already be merged to main by Nam):
-Mine on seats, round 1: 16a0fd6 feat(store): add a read-only student history · 9643306 test(store): read history from old saves and backups · 6887c93 feat(seed): add past restroom trips to the demo · a30006d feat(store): start history from the day a student joined. Tests were 39, all passing.
+Mine on seats, round 1: 16a0fd6 feat(store): add a read-only student history · 9643306 test(store): read history from old saves and backups · 6887c93 feat(seed): add past restroom trips to the demo · a30006d feat(store): start history from the day a student joined. Round 2: 60e14c7 feat(store): don't mark late joiners absent before they joined. Tests were 46, all passing.
 Your files:
-- js/store.js: all state and actions; the only `localStorage` code. `studentHistory(classId, studentId)` → `{ cls, student, days: [{ date, status, checkIn, minutesLate, overridden }], trips: [{ id, date, departedAt, returnedAt, overrideReason }], counts }` or null; days are class days ≤ today and ≥ `student.addedOn` (if set). Students: `{ id, name, addedOn? }`.
+- js/store.js: all state and actions; the only `localStorage` code. `studentHistory(classId, studentId)` → `{ cls, student, days: [{ date, status, checkIn, minutesLate, overridden }], trips: [{ id, date, departedAt, returnedAt, overrideReason }], counts }` or null; days are class days ≤ today and ≥ `student.addedOn` (if set). Students: `{ id, name, addedOn? }`. On a date before `addedOn` with no edit and no check-in, `statusFor` returns `'notadded'` (`STATUSES.notadded = 'Not added yet'`); edits still win; markRestPresent skips it.
 - js/seed.js: three made-up classes, 5 past school days of check-ins (218) and 41 finished restroom trips (separate rng stream).
 - tests/store.test.js: late times, finalizing, restroom rules, student history, demo, backups, old saves.
-Open from round 1: Attendance's past days still show a late-joining student as Absent before `addedOn` (only history skips them); ask Nam before changing statusFor.
+Open: nothing in the data lane. Watch nextsessions/OPEN-ASKS.md for new Ready items.
 
 JOBS, in this order:
  0. Baseline: `node --test` (all pass); `python3 serve.py 8131` from your worktree; Attendance, Restroom tab (‹ to a past day shows demo trips), click a name → history, Settings → Download backup → Restore. Note anything broken; yours → fix, else post to its owner.
