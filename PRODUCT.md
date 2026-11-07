@@ -11,7 +11,7 @@ web
 One teacher and the students in their class periods.
 
 - **Students** check themselves in at the classroom door on a shared Chromebook (about 1366×768, with a keyboard), running the kiosk page unattended. They type part of their name and press Enter. The job is a few seconds long.
-- **The teacher** opens the Attendance page during class, after students have checked in, and copies who is absent and who is late into Skyward by hand. Skyward assumes everyone is present, so only the exceptions matter.
+- **The teacher** opens the Attendance page during class, after students have checked in, and copies who is absent and who is late into Skyward by hand. Skyward assumes everyone is present, so only the exceptions matter. Clicking a student's name opens that student's history: their days (status, check-in time, minutes late) and their restroom trips, with a one-line count.
 - **Restroom trips** use the same kiosk: a student picks the Restroom tab, finds their name and leaves, or joins the waitlist when they can't go yet. The student who is out gets a Session card (time out, time in, running timer) with an I'm back button, and a student who joined the waitlist can leave it. The teacher watches the same queue on the Restroom tab and can override.
 
 ## Product Purpose
@@ -26,7 +26,7 @@ A single-classroom tool that never sends student names anywhere. Everything live
 
 - The kiosk runs all period on the Chromebook at the door, locked behind a teacher PIN (default 1234; casual-tap protection, not security).
 - The teacher uses the same device and browser for Attendance, since data lives in that browser's `localStorage`.
-- Skyward is the school's system of record; this app feeds it by hand. Export CSV (Date, Class, Student, Status, Check-in time) is a backup and a way to open the day in Sheets or Excel.
+- Skyward is the school's system of record; this app feeds it by hand. Export CSV is a way to open the day in Sheets or Excel: the attendance file has Date, Class, Student, Status, Check-in time and Minutes late, and the Restroom tab's file has one row per trip (Date, Class, Student, Trip, Out, Back, Minutes out, Override reason). The Backup in Settings is what protects the data.
 - Each class has a start time, an optional end time, a number of "late after" minutes and an optional "absent after" number (a single day can have its own times). Statuses come from check-in times against those cutoffs: Present, Late, Absent for an arrival past the absent cutoff, Not yet (hasn't checked in), and Absent for no check-in once the teacher finalizes the day or the day is over. The teacher can override with P / L / A and undo the override.
 - Restroom trips are limited by capacity (default 1 student) and one number of minutes (default 10) set in Settings: no trips in the first or the last that many minutes of class. The last minutes only apply to a class with an end time, and nobody joins the waitlist once trips have closed. Students who are out can always come back. Students who can't go yet wait in line; the teacher can override with a reason.
 
@@ -34,9 +34,9 @@ A single-classroom tool that never sends student names anywhere. Everything live
 
 - Plain HTML, CSS and JavaScript ES modules, no build step, no dependencies. Served locally with `python3 serve.py` (port 8130).
 - **Everything stays local.** No backend, database, sync, accounts, analytics, third-party scripts or fonts. The page makes no network requests and student names never leave the device.
-- Scope stays minimal: check-in, the day's attendance, restroom trips and the waitlist, classes/rosters, settings. No range views, per-student history, charts or reports. No barcodes, school timezone setting or weekly bell schedules; times use the device's clock.
+- Scope stays minimal: check-in, the day's attendance, restroom trips and the waitlist, classes/rosters, settings. A student's name opens a plain history of their attendance days and restroom trips (a table and a one-line count, shown only on teacher pages, never on the kiosk). Still out: charts, range views, reports and any other analytics. No barcodes, school timezone setting or weekly bell schedules; times use the device's clock.
 - The kiosk shows check-in times but never late status to students.
-- Pages: kiosk (`#/checkin`, with Check in and Restroom tabs), Attendance (`#/attendance`) and its Restroom tab (`#/restroom`), Classes (`#/classes`), Settings (`#/settings`, including a Support section with the computer science club's email as a `mailto:` link, never on the kiosk), plus a collapsible sidebar (260px or a 64px icon rail; phones always get the rail).
+- Pages: kiosk (`#/checkin`, with Check in and Restroom tabs), Attendance (`#/attendance`) and its Restroom tab (`#/restroom`), Classes (`#/classes`), Settings (`#/settings`, including a Support section with the computer science club's email as a `mailto:` link, never on the kiosk), plus a student history modal (opened from a name on Attendance, the Restroom tab or Classes, never from the kiosk) and a collapsible sidebar (260px or a 64px icon rail; phones always get the rail).
 
 ## Brand Commitments
 
@@ -46,14 +46,14 @@ A single-classroom tool that never sends student names anywhere. Everything live
 
 ## Evidence on Hand
 
-- Demo data only: three made-up classes with a week of history (`js/seed.js`). No real student names, testimonials or school branding exist in the repo, and none should be invented.
+- Demo data only: three made-up classes with a week of check-ins and restroom trips (`js/seed.js`). No real student names, testimonials or school branding exist in the repo, and none should be invented.
 
 ## Product Principles
 
 1. **Local first, always.** If a feature needs a network or a server, it doesn't belong here.
 2. **Exceptions over everyone.** Attendance surfaces who to mark in Skyward; the present majority stays out of the way.
 3. **One name, one keypress.** The kiosk is for a student in a hurry at the door; nothing should slow that down or let a scroll check in the wrong person.
-4. **Say no to scope.** Simplicity is the feature; extra dashboards, history and charts were explicitly rejected.
+4. **Say no to scope.** Simplicity is the feature. A student's history is the one view that was added on request; extra dashboards, charts, range views and reports were explicitly rejected.
 
 ## Accessibility & Inclusion
 
