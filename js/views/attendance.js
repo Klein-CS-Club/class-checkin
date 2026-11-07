@@ -74,7 +74,7 @@ export function renderAttendance(el) {
           <input type="date" id="date" aria-label="Date">
           <button class="action" data-step="1" aria-label="Next day">${icon('chevronRight')}</button>
         </div>
-        <button class="btn-secondary" id="export">${icon('download')}Export CSV</button>
+        <button class="btn-secondary" id="export">${icon('download')}Export ${restroom ? 'restroom' : 'attendance'} CSV</button>
         <button class="btn-primary" id="kiosk">${icon('play')}Start check-in</button>
       </header>
       <div class="page-body" id="body"></div>
