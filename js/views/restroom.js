@@ -11,6 +11,9 @@ import { openModal } from '../modal.js';
 let notice = '';
 export const clearRestroomNotice = () => { notice = ''; };
 
+// Statuses that gray a name on the Students table, and the line shown under it.
+const AWAY_REASON = { notyet: 'Not checked in', absent: 'Absent', notadded: 'Not added yet' };
+
 const nameOf = (cls, studentId) => cls.students.find((s) => s.id === studentId)?.name ?? 'Removed student';
 
 // Time a student has spent out today, counting a trip that hasn't ended yet.
@@ -83,10 +86,11 @@ export function restroomHtml(cls, date) {
         <button class="btn-secondary" data-r="request" data-student="${s.id}">Send out</button>`;
     }
     // Not checked in (or absent, or not on the roster yet that day): the name is grayed so it's clear who isn't in the room.
-    const away = ['notyet', 'absent', 'notadded'].includes(statusFor(cls, date, s.id));
+    // A small gray line under the name says why.
+    const reason = AWAY_REASON[statusFor(cls, date, s.id)];
     return `
       <tr>
-        <td class="student-name${away ? ' away' : ''}"><button class="name-link" data-history="${s.id}">${escapeHtml(s.name)}</button></td>
+        <td class="student-name${reason ? ' away' : ''}"><button class="name-link" data-history="${s.id}">${escapeHtml(s.name)}</button>${reason ? `<div class="list-sub">${reason}</div>` : ''}</td>
         <td class="tabular muted" data-label="Trips">${sum.trips.filter((t) => t.studentId === s.id).length}</td>
         <td class="tabular muted" data-label="Time out" data-out-for="${s.id}">${duration(msOut(sum, s.id, at))}</td>
         <td class="status-col"><div class="status-cell">${action}</div></td>
