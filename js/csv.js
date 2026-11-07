@@ -1,4 +1,5 @@
 // CSV in and out. The writer is ported from gdpt-checkin's lib/csv.ts.
+import { time12 } from './format.js';
 
 // UTF-8 byte order mark, so Excel opens accented names correctly.
 const BOM = '﻿';
@@ -15,6 +16,30 @@ function cell(value) {
 // The full file contents (RFC 4180): BOM, header, rows, CRLF line endings.
 export function toCsv(header, rows) {
   return BOM + [header, ...rows].map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n';
+}
+
+export const RESTROOM_HEADER = ['Date', 'Class', 'Student', 'Trip', 'Out', 'Back', 'Minutes out', 'Override reason'];
+
+// One row per restroom trip, in the order students left. Trip counts each student's trips that day.
+// A student still out has no Back time or minutes. A student no longer on the roster shows as "Removed student".
+export function restroomRows(cls, date, trips) {
+  const names = new Map(cls.students.map((s) => [s.id, s.name]));
+  const seen = new Map();
+  return [...trips].sort((a, b) => a.departedAt - b.departedAt).map((t) => {
+    const n = (seen.get(t.studentId) ?? 0) + 1;
+    seen.set(t.studentId, n);
+    const back = t.returnedAt != null;
+    return [
+      date,
+      cls.name,
+      names.get(t.studentId) ?? 'Removed student',
+      n,
+      time12(t.departedAt),
+      back ? time12(t.returnedAt) : '',
+      back ? Math.round((t.returnedAt - t.departedAt) / 60000) : '',
+      t.overrideReason ?? '',
+    ];
+  });
 }
 
 // Parses CSV text into rows of strings. Handles quoted cells, doubled quotes and CRLF.
