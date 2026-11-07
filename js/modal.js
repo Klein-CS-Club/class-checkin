@@ -1,6 +1,8 @@
 import { icon } from './icons.js';
 import { escapeHtml } from './format.js';
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 // Opens a modal. `render(body, close)` fills it; returns close().
 export function openModal({ title, className = '', dismissible = true, render }) {
   const root = document.getElementById('modal-root');
@@ -31,6 +33,28 @@ export function openModal({ title, className = '', dismissible = true, render })
   }
   function onKey(e) {
     if (e.key === 'Escape' && dismissible) close();
+    if (e.key === 'Tab') trapTab(e);
+  }
+  // Keep Tab and Shift+Tab inside this modal. Only the top modal does it,
+  // so a confirm dialog opened over another modal gets the focus.
+  function trapTab(e) {
+    if (root.lastElementChild !== backdrop) return;
+    const box = backdrop.querySelector('.modal');
+    const items = [...box.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+    if (!items.length) { e.preventDefault(); box.focus(); return; }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (!box.contains(active) || active === box) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+    } else if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 
   document.addEventListener('keydown', onKey);
