@@ -86,7 +86,7 @@ export function restroomHtml(cls, date) {
     const away = ['notyet', 'absent'].includes(statusFor(cls, date, s.id));
     return `
       <tr>
-        <td class="student-name${away ? ' away' : ''}">${escapeHtml(s.name)}</td>
+        <td class="student-name${away ? ' away' : ''}"><button class="name-link" data-history="${s.id}">${escapeHtml(s.name)}</button></td>
         <td class="tabular muted" data-label="Trips">${sum.trips.filter((t) => t.studentId === s.id).length}</td>
         <td class="tabular muted" data-label="Time out" data-out-for="${s.id}">${duration(msOut(sum, s.id, at))}</td>
         <td class="status-col"><div class="status-cell">${action}</div></td>
