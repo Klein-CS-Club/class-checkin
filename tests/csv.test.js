@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toCsv, RESTROOM_HEADER, restroomRows } from '../js/csv.js';
+import { toCsv, parseCsv, RESTROOM_HEADER, restroomRows } from '../js/csv.js';
 
 // Local times on 2026-11-06, so the tests don't depend on the time zone.
 const at = (h, m, s = 0) => new Date(2026, 10, 6, h, m, s).getTime();
@@ -59,4 +59,31 @@ test('the override reason is kept and a formula-looking reason is guarded', () =
 test('a removed student shows as Removed student', () => {
   const [row] = restroomRows(cls, '2026-11-06', [trip('gone', at(9, 5), at(9, 8))]);
   assert.equal(row[2], 'Removed student');
+});
+
+test('names with commas, quotes, accents and line breaks survive a round trip', () => {
+  const odd = {
+    id: 'c3',
+    name: 'Period 3, "Honors" Café',
+    students: [
+      { id: 'n', name: 'Ng, Minh' },
+      { id: 'z', name: 'Zoë "Zo" Núñez' },
+      { id: 'l', name: 'Line\nBreak' },
+    ],
+  };
+  const rows = restroomRows(odd, '2026-11-06', [
+    trip('n', at(9, 0), at(9, 5)),
+    trip('z', at(9, 10), null, 'Said "ok", fine'),
+    trip('l', at(9, 20), at(9, 21)),
+  ]);
+  const text = toCsv(RESTROOM_HEADER, rows);
+  assert.ok(text.startsWith('\uFEFF'), 'starts with a byte order mark');
+  assert.ok(text.endsWith('\r\n'), 'ends with CRLF');
+  const back = parseCsv(text);
+  assert.deepEqual(back[0], RESTROOM_HEADER);
+  assert.equal(back.length, 4);
+  assert.ok(back.every((r) => r.length === RESTROOM_HEADER.length), 'every row keeps 8 cells');
+  assert.deepEqual(back.slice(1).map((r) => r[2]), ['Ng, Minh', 'Zoë "Zo" Núñez', 'Line\nBreak']);
+  assert.equal(back[2][7], 'Said "ok", fine');
+  assert.equal(back[1][1], 'Period 3, "Honors" Café');
 });
