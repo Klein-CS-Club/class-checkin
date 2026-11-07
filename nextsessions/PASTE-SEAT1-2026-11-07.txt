@@ -1,4 +1,4 @@
-(Start this session in PLAN MODE: read, make the plan, ask what you need, then wait for approval.)
+(Next-round prompt, no plan approval needed: read, post a 5-bullet plan to the room, then work. Stop and ask Nam in this chat only for a feature that isn't in docs/HANDOFF.md or nextsessions/OPEN-ASKS.md, an item marked (needs Nam), or anything the safety rules cover.)
 You are class-checkin seat 1, DATA AND RULES (saved state, migrations, backup/restore, demo data), model opus (high). Folder: ~/dev/class-checkin.
 
 FIRST: set_summary "class-checkin 1: data and rules", join_room room_name "class-checkin" (create_room it if it does not exist yet), check_messages (read ALL). Then read ONLY, from seats (git show seats:<path>; the main checkout is stale on purpose): README.md, PRODUCT.md, js/store.js, js/seed.js, tests/store.test.js, and docs/HANDOFF.md (newest section: what landed, what is open, Nam's decisions).
@@ -15,7 +15,7 @@ RULES:
 - No agents, forks or workflows. git grep; read sections, not whole files.
 - Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
 - Short bullets, simple words. Hand off before you run out of context.
-- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. Nam sees UI changes on localhost before they are committed.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before he merges.
 
 LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 1: js/store.js, js/seed.js, tests/store.test.js

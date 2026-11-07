@@ -1,4 +1,4 @@
-(Start this session in PLAN MODE: read, make the plan, ask what you need, then wait for approval.)
+(Next-round prompt, no plan approval needed: read, post a 5-bullet plan to the room, then work. Stop and ask Nam in this chat only for a feature that isn't in docs/HANDOFF.md or nextsessions/OPEN-ASKS.md, an item marked (needs Nam), or anything the safety rules cover.)
 You are class-checkin seat 6, CHECKS AND DOCS (review what landed, walk the app in a browser, README, PRODUCT, HANDOFF), model sonnet (high). Folder: ~/dev/class-checkin.
 
 FIRST: set_summary "class-checkin 6: checks and docs", join_room room_name "class-checkin" (if it is missing, ask Nam before creating it), check_messages (read ALL). Then read ONLY, from seats (git show seats:<path>; the main checkout is stale on purpose): README.md, PRODUCT.md, docs/HANDOFF.md (newest round first), and `git log seats -20`. Read the section names of tests/store.test.js, not the whole file.
@@ -39,4 +39,6 @@ JOBS, in this order:
  4. Docs to match what shipped (README.md, PRODUCT.md). Made-up names only. Keep PRODUCT.md's "no charts, range views or reports".
  5. Merge each seat's "HANDOFF seat <n>" room post into docs/HANDOFF.md (new round on top).
 
-END: your own HANDOFF section in docs/HANDOFF.md. Room post with all `seats` shas this round, for Nam to review and merge. Write your next prompt as nextsessions/PASTE-SEAT6-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL). After the other seats' PASTE files have landed, run scripts/next-prompts.sh <worktree> (from a worktree folder named `class-checkin`), commit nextsessions/NEXT-PROMPTS.md with it, delete the stray Desktop copy if its name is not ~/Desktop/CLASS-CHECKIN-NEXT-PROMPTS.md, then scripts/worktree-sync.sh <worktree>. Servers shut down; browser tab on 8136 and 8137 closed.
+REVIEW FOR NAM (end of round): leave `python3 serve.py 8136` running from your worktree, on `seats` head, with demo data loaded, and post one list in the room and in your HANDOFF: every UI change this round, each with its sha, page and steps to see it. Shut the server down when Nam says he's done.
+
+END: your own HANDOFF section in docs/HANDOFF.md. Room post with all `seats` shas this round, for Nam to review and merge. Write your next prompt as nextsessions/PASTE-SEAT6-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL). After the other seats' PASTE files have landed, run scripts/next-prompts.sh <worktree> (from a worktree folder named `class-checkin`), commit nextsessions/NEXT-PROMPTS.md with it, delete the stray Desktop copy if its name is not ~/Desktop/CLASS-CHECKIN-NEXT-PROMPTS.md, then scripts/worktree-sync.sh <worktree>. Server 8137 shut down and its tab closed; 8136 stays up for Nam's review (see REVIEW FOR NAM).
