@@ -8,6 +8,7 @@ import { escapeHtml, todayKey, addDays, dayLabel, atTime, hhmm, time12, timeLabe
 import { showTimeHint } from './timeinput.js';
 import { toCsv, downloadCsv } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
+import { openStudentHistory } from './history.js';
 import { restroomHtml, refreshRestroomLive, handleRestroomClick, clearRestroomNotice } from './restroom.js';
 
 let date = todayKey();
@@ -130,7 +131,7 @@ export function renderAttendance(el) {
             <tbody>
               ${rows.map((r) => `
                 <tr>
-                  <td class="student-name">${escapeHtml(r.student.name)}</td>
+                  <td class="student-name"><button class="name-link" data-history="${r.student.id}">${escapeHtml(r.student.name)}</button></td>
                   <td class="tabular muted">${r.checkIn ? escapeHtml(time12(r.checkIn.at)) : '—'}</td>
                   <td class="tabular muted">${r.minutesLate ?? '—'}</td>
                   <td class="status-col">
@@ -152,6 +153,7 @@ export function renderAttendance(el) {
   el.querySelector('.page').addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if (!t) return;
+    if (t.dataset.history) return openStudentHistory(currentClass().id, t.dataset.history);
     if (handleRestroomClick(t, currentClass(), date, render)) return;
     if (t.dataset.demoTime) {
       const cls = currentClass();
