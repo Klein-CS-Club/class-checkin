@@ -327,6 +327,19 @@ test('the demo has its own clock, its own records, and resets without touching r
   assert.equal(store.getState().classes.length, 2); // the real class and the demo
 });
 
+test('demo data includes past restroom trips that show in a student’s history', () => {
+  store.loadDemo();
+  const { trips, checkIns, classes } = store.getState();
+  assert.equal(checkIns.length, 218); // the demo check-ins are the same as before trips were added
+  assert.ok(trips.length >= 2 * 5 * classes.length);
+  assert.ok(trips.every((t) => t.returnedAt > t.departedAt && t.date === undefined && t.sessionId === `${t.classId}|${dateKey(new Date(t.departedAt))}`));
+  const nurse = trips.find((t) => t.overrideReason === 'Nurse pass');
+  const history = store.studentHistory(nurse.classId, nurse.studentId);
+  assert.ok(history.trips.some((t) => t.id === nurse.id && t.overrideReason === 'Nurse pass'));
+  const twice = trips.find((t) => trips.some((o) => o !== t && o.studentId === t.studentId && o.sessionId === t.sessionId));
+  assert.ok(twice, 'one student goes twice on one day');
+});
+
 // ---------- Saving ----------
 test('a backup brings back trips, finalized days and the restroom rules', () => {
   store.setRestroomRules(3, 7);

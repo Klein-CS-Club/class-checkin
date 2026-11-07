@@ -65,8 +65,9 @@ export function demoData(uid) {
     days: {},
     students: c.students.map((name) => ({ id: uid(), name })),
   }));
+  const days = pastSchoolDays();
   const checkIns = [];
-  for (const date of pastSchoolDays()) {
+  for (const date of days) {
     for (const c of classes) {
       const [h, m] = c.startTime.split(':').map(Number);
       const cutoff = h * 60 + m + c.lateMinutes; // minutes after midnight
@@ -81,5 +82,43 @@ export function demoData(uid) {
       }
     }
   }
-  return { classes, checkIns, overrides: {} };
+  return { classes, checkIns, overrides: {}, trips: demoTrips(classes, checkIns, days, uid) };
+}
+
+const minutesOf = (hm) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+const atMinute = (date, minutes) => new Date(`${date}T12:00:00`).setHours(0, minutes, 0, 0);
+
+// Finished restroom trips (3 to 8 minutes) on the past days, one student out at a time, inside the 10:10 rule, by
+// students who had already checked in. Two days back one student goes twice; three days back the
+// first trip was a teacher override. A separate random stream keeps the check-ins above unchanged.
+function demoTrips(classes, checkIns, days, uid) {
+  const rand = rng(7);
+  const trips = [];
+  for (const c of classes) {
+    const close = minutesOf(c.endTime) - 10;
+    days.forEach((date, daysBack) => {
+      let at = minutesOf(c.startTime) + 10 + Math.floor(rand() * 8);
+      const count = daysBack === 1 || rand() < 0.5 ? 3 : 2;
+      let first = null;
+      for (let i = 0; i < count; i += 1) {
+        const length = 3 + Math.floor(rand() * 6);
+        if (at + length > close) break;
+        const here = checkIns.filter((x) => x.classId === c.id && x.date === date && x.at <= atMinute(date, at));
+        if (!here.length) break;
+        const studentId = daysBack === 1 && i === 2 && first ? first : here[Math.floor(rand() * here.length)].studentId;
+        first ??= studentId;
+        trips.push({
+          id: uid(),
+          sessionId: `${c.id}|${date}`,
+          classId: c.id,
+          studentId,
+          departedAt: atMinute(date, at),
+          returnedAt: atMinute(date, at + length),
+          overrideReason: daysBack === 2 && i === 0 ? 'Nurse pass' : '',
+        });
+        at += length + 1 + Math.floor(rand() * 4);
+      }
+    });
+  }
+  return trips;
 }
