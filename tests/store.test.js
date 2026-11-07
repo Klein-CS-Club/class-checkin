@@ -116,7 +116,7 @@ test('students stay not-yet until finalized, and finalizing can be undone', () =
 });
 
 test('a day that is over counts as absent without finalizing', () => {
-  assert.equal(store.statusFor(store.classById(classId), '2020-01-01', ann), 'absent');
+  assert.equal(store.statusFor(store.classById(classId), daysAgo(1), ann), 'absent');
 });
 
 // ---------- Restroom ----------
@@ -326,6 +326,41 @@ test('a student added later has history only from the day they joined, and the d
   assert.equal(store.studentHistory(classId, bob).days.length, 2);
   store.restoreBackup(store.readBackup(store.backupText()));
   assert.equal(store.classById(classId).students.find((s) => s.id === eve).addedOn, daysAgo(1));
+});
+
+test('before a student was added they show as not added yet, and an edit still counts', () => {
+  clockOn(daysAgo(2), '08:01');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '07:30');
+  store.addStudents(classId, ['Eve Evans']);
+  const eve = store.classById(classId).students.find((s) => s.name === 'Eve Evans').id;
+  clock('08:00');
+  const cls = store.classById(classId);
+  assert.deepEqual(
+    [daysAgo(2), daysAgo(1), day].map((d) => store.statusFor(cls, d, eve)), ['notadded', 'absent', 'notyet']);
+  assert.equal(store.STATUSES.notadded, 'Not added yet');
+  assert.equal(store.dayRows(classId, daysAgo(2)).find((r) => r.student.id === eve).status, 'notadded');
+  store.markRestPresent(classId, daysAgo(2)); // marks Bob and Cy present, leaves Eve alone
+  assert.deepEqual([bob, cy, eve].map((id) => store.statusFor(cls, daysAgo(2), id)), ['present', 'present', 'notadded']);
+  store.setOverride(classId, daysAgo(2), eve, 'late');
+  assert.equal(store.statusFor(cls, daysAgo(2), eve), 'late');
+  const history = store.studentHistory(classId, eve);
+  assert.deepEqual(history.days.map((d) => [d.date, d.status, d.overridden]), [[daysAgo(2), 'late', true]]);
+  assert.equal(history.counts.late, 1);
+  store.setOverride(classId, daysAgo(2), eve, null);
+  assert.equal(store.statusFor(cls, daysAgo(2), eve), 'notadded');
+});
+
+test('students from an old backup, with no added date, stay absent on past days', () => {
+  store.restoreBackup(store.readBackup(JSON.stringify({
+    app: 'class-checkin-v1',
+    classes: [{ id: 'o', name: 'Old', lateAfter: '08:00', students: [{ id: 'p', name: 'Pat Old' }, { id: 'q', name: 'Quinn Old' }] }],
+    checkIns: [{ id: 'z', classId: 'o', studentId: 'p', date: daysAgo(3), at: atTime(daysAgo(3), '07:59') }],
+  })));
+  const cls = store.classById('o');
+  assert.equal(store.statusFor(cls, daysAgo(3), 'q'), 'absent');
+  assert.equal(store.getState().checkIns.length, 1);
+  assert.equal(cls.students.length, 2);
 });
 
 // ---------- Period 7 demo ----------
