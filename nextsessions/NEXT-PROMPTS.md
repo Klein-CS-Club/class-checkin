@@ -1,6 +1,6 @@
 # class-checkin: next sessions, copy-paste prompts
 
-As of `seats` at `6002791`, written 2026-11-07T15:19Z by `scripts/next-prompts.sh` (rerun it after a new PASTE file lands).
+As of `seats` at `522b11f`, written 2026-11-07T15:20Z by `scripts/next-prompts.sh` (rerun it after a new PASTE file lands).
 
 How: `seats up .` in the project, paste ONE block per seat; seat 6 goes in as `/loop` followed by its block. Round-one blocks start in PLAN MODE; next-round blocks post a plan to the room and start. Each block tells the seat what to read.
 

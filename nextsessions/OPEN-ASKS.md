@@ -1,6 +1,6 @@
 ## Open asks (the backlog)
 
-Seats take **Ready** items in their own lane once their numbered jobs are done: post "claiming: <item>" in the room first, one at a time. **Needs Nam** items wait for his yes in that seat's own chat. Seats never add items; seat 6 keeps this list and puts room proposals under **Proposed**. Nam adds or moves items here himself.
+Seats take **Ready** items in their own lane once their numbered jobs are done: post "claiming: <item>" in the room first, one at a time. **Needs Nam** items wait for Nam's yes in that seat's own chat. Seats never add items; seat 6 keeps this list and puts room proposals under **Proposed**. Nam adds or moves items here himself.
 
 ### Ready
 - (none yet: Nam moves items here)

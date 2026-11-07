@@ -15,7 +15,7 @@ RULES:
 - No agents, forks or workflows. git grep; read sections, not whole files.
 - Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
 - Short bullets, simple words. Hand off before you run out of context.
-- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before he merges.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before merging.
 
 LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 1: js/store.js, js/seed.js, tests/store.test.js
@@ -26,7 +26,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
-ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
 DECIDED IN ROUND 1 (2026-11-07, Nam): click a name on the teacher pages → a modal with that student's attendance days and restroom trips (no charts; never on the kiosk); Restroom tab Export CSV, one row per trip; students get an optional `addedOn` so history starts the day they joined. Charts, range views and reports are still out.
 
@@ -43,6 +43,6 @@ JOBS, in this order:
  1. Whatever Nam asks for this round that touches saved state, migrations, backup/restore or demo data. Saved-shape changes: optional field, safe default, an old-save test, post first.
  2. Anything the room asks of the data lane.
 
-BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: post your HANDOFF section in the room headed "HANDOFF seat 1" (what landed with shas, what's open; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with your `seats` shas and what other seats must know. Write your next prompt as nextsessions/PASTE-SEAT1-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last) and run scripts/worktree-sync.sh <worktree>. Server shut down.
