@@ -25,7 +25,9 @@ let classId, ann, bob, cy;
 beforeEach(() => {
   store.resetAll();
   classId = store.addClass('Period 1', '08:00', 5);
+  Date.now = () => atTime(addDays(day, -30), '07:00'); // on the roster well before any test's days
   store.addStudents(classId, ['Ann Adams', 'Bob Brown', 'Cy Clark']);
+  Date.now = realNow;
   [ann, bob, cy] = store.sortedStudents(store.classById(classId)).map((s) => s.id);
 });
 afterEach(() => { Date.now = realNow; });
@@ -309,6 +311,21 @@ test('days with no records for the class are skipped', () => {
   clock('08:00');
   assert.deepEqual(store.studentHistory(classId, bob).days.map((d) => [d.date, d.status]), [[daysAgo(2), 'absent']]);
   assert.equal(store.studentHistory(classId, 'gone'), null);
+});
+
+test('a student added later has history only from the day they joined, and the date survives a backup', () => {
+  clockOn(daysAgo(2), '08:01');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '07:30');
+  store.addStudents(classId, ['Eve Evans']);
+  const eve = store.classById(classId).students.find((s) => s.name === 'Eve Evans').id;
+  clockOn(daysAgo(1), '08:02');
+  store.checkIn(classId, ann);
+  clock('08:00');
+  assert.deepEqual(store.studentHistory(classId, eve).days.map((d) => [d.date, d.status]), [[daysAgo(1), 'absent']]);
+  assert.equal(store.studentHistory(classId, bob).days.length, 2);
+  store.restoreBackup(store.readBackup(store.backupText()));
+  assert.equal(store.classById(classId).students.find((s) => s.id === eve).addedOn, daysAgo(1));
 });
 
 // ---------- Period 7 demo ----------

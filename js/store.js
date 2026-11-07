@@ -20,7 +20,8 @@ function initialState() {
     settings: { pin: '1234', sidebarExpanded: true, capacity: 1, restrictionMinutes: 10 },
     currentClassId: null, // the period picked in the sidebar
     // [{ id, name, startTime: 'HH:mm', endTime: 'HH:mm' | null, lateMinutes, absentMinutes: n | null,
-    //    days: { date: { startTime, endTime, lateMinutes, absentMinutes } }, students: [{ id, name }] }]
+    //    days: { date: { startTime, endTime, lateMinutes, absentMinutes } }, students: [{ id, name, addedOn? }] }]
+    //    addedOn ('YYYY-MM-DD') is when the student joined the roster; older students don't have one.
     classes: [],
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
@@ -135,7 +136,7 @@ export function addStudents(classId, names) {
   for (const raw of names) {
     const name = tidyName(raw);
     if (!name || [...cls.students, ...added].some((s) => sameName(s.name, name))) continue;
-    added.push({ id: uid(), name });
+    added.push({ id: uid(), name, addedOn: todayFor(cls) });
   }
   if (added.length) updateClass(classId, { students: [...cls.students, ...added] });
   return added.length;
@@ -289,7 +290,9 @@ export function studentHistory(classId, studentId) {
     ...Object.keys(state.finalized).filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)),
     ...state.trips.filter((t) => t.classId === classId).map((t) => t.sessionId.slice(prefix.length)),
   ]);
-  const days = [...dates].filter((date) => date <= today).sort().reverse().map((date) => ({
+  // Days before the student joined the roster aren't theirs. Students from older saves have no date: every day.
+  const joined = student.addedOn ?? '';
+  const days = [...dates].filter((date) => date <= today && date >= joined).sort().reverse().map((date) => ({
     date,
     status: statusFor(cls, date, studentId),
     checkIn: findCheckIn(classId, date, studentId) ?? null,
