@@ -1,7 +1,7 @@
 import { icon } from '../icons.js';
 import {
   getState, subscribe, classById, dayRows, checkIn, undoCheckIn, stopKiosk, sortedStudents, todayFor, nowFor,
-  restroomSummary, departureEligibility, requestRestroom, markOut, markReturned, cancelRequest,
+  restroomSummary, departureEligibility, requestRestroom, markOut, markReturned, cancelRequest, closingProblem,
 } from '../store.js';
 import { matchesSearch } from '../names.js';
 import { escapeHtml, time12, duration } from '../format.js';
@@ -72,9 +72,11 @@ export function renderCheckin(el) {
   }
 
   const row = ({ student, act }, i) => `
-    <div class="kiosk-row${i === highlight ? ' highlight' : ''}">
+    <div class="kiosk-row${i >= 0 && i === highlight ? ' highlight' : ''}">
       <span class="kiosk-name">${escapeHtml(student.name)}</span>
-      <button class="btn-primary" data-id="${student.id}">${act ? act.label : 'Check in'}</button>
+      ${act?.closed
+        ? `<span class="kiosk-done">${act.closed}</span>`
+        : `<button class="btn-primary" data-id="${student.id}">${act ? act.label : 'Check in'}</button>`}
     </div>`;
   const doneRow = ({ student, checkIn: entry }) => `
     <div class="kiosk-row done">
@@ -125,6 +127,10 @@ export function renderCheckin(el) {
       const waiting = { place: place + 1, queueId: sum.queue[place].id };
       return reason ? { kind: null, reason, ...waiting } : { kind: 'go', label: 'Go now', ...waiting };
     }
+    // Once trips have closed the store won't take a place in line, so say so instead of offering a button.
+    // The long reason is in the blue note on the left; each row gets the short version.
+    const closed = closingProblem(cls, todayFor(cls), at);
+    if (closed) return { kind: null, reason, closed: closed.startsWith('Class is over') ? 'Class is over' : 'Trips closed' };
     return { kind: 'request', label: reason ? 'Join waitlist' : 'Go to restroom', reason };
   }
 
@@ -145,7 +151,7 @@ export function renderCheckin(el) {
     const sessions = sum.active.length ? sum.active : last ? [last] : [];
     const sig = JSON.stringify([
       sum.active.length, sum.queue.length, sessions.map((t) => [t.id, t.returnedAt]),
-      all.map((r) => [r.student.id, r.act.kind, r.act.label, r.act.place, r.act.reason]),
+      all.map((r) => [r.student.id, r.act.kind, r.act.label, r.act.place, r.act.reason, r.act.closed]),
     ]);
     return { sum, all, waitlist, names, sessions, sig };
   }
