@@ -1,12 +1,12 @@
 # class-checkin: next sessions, copy-paste prompts
 
-As of `seats` at `522b11f`, written 2026-11-07T15:20Z by `scripts/next-prompts.sh` (rerun it after a new PASTE file lands).
+As of `seats` at `20bbebd`, written 2026-11-07T15:21Z by `scripts/next-prompts.sh` (rerun it after a new PASTE file lands).
 
 How: `seats up .` in the project, paste ONE block per seat; seat 6 goes in as `/loop` followed by its block. Round-one blocks start in PLAN MODE; next-round blocks post a plan to the room and start. Each block tells the seat what to read.
 
 ## Open asks (the backlog)
 
-Seats take **Ready** items in their own lane once their numbered jobs are done: post "claiming: <item>" in the room first, one at a time. **Needs Nam** items wait for his yes in that seat's own chat. Seats never add items; seat 6 keeps this list and puts room proposals under **Proposed**. Nam adds or moves items here himself.
+Seats take **Ready** items in their own lane once their numbered jobs are done: post "claiming: <item>" in the room first, one at a time. **Needs Nam** items wait for Nam's yes in that seat's own chat. Seats never add items; seat 6 keeps this list and puts room proposals under **Proposed**. Nam adds or moves items here himself.
 
 ### Ready
 - (none yet: Nam moves items here)
@@ -43,7 +43,7 @@ RULES:
 - No agents, forks or workflows. git grep; read sections, not whole files.
 - Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
 - Short bullets, simple words. Hand off before you run out of context.
-- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before he merges.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before merging.
 
 LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 1: js/store.js, js/seed.js, tests/store.test.js
@@ -54,7 +54,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
-ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
 DECIDED IN ROUND 1 (2026-11-07, Nam): click a name on the teacher pages → a modal with that student's attendance days and restroom trips (no charts; never on the kiosk); Restroom tab Export CSV, one row per trip; students get an optional `addedOn` so history starts the day they joined. Charts, range views and reports are still out.
 
@@ -71,7 +71,7 @@ JOBS, in this order:
  1. Whatever Nam asks for this round that touches saved state, migrations, backup/restore or demo data. Saved-shape changes: optional field, safe default, an old-save test, post first.
  2. Anything the room asks of the data lane.
 
-BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: post your HANDOFF section in the room headed "HANDOFF seat 1" (what landed with shas, what's open; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with your `seats` shas and what other seats must know. Write your next prompt as nextsessions/PASTE-SEAT1-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last) and run scripts/worktree-sync.sh <worktree>. Server shut down.
 ```
@@ -96,7 +96,7 @@ RULES:
 - No agents, forks or workflows. git grep; read sections, not whole files.
 - Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
 - Short bullets, simple words. Hand off before you run out of context.
-- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before he merges.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before merging.
 
 LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 1: js/store.js, js/seed.js, tests/store.test.js
@@ -107,7 +107,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
-ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
 STATE (end of round 1, 2026-11-07): the kiosk lane had no code change in round 1. `checkin.js` and `app.js` are the same as on `main` (e28399e). `seats` got the student history modal on the teacher pages (seat 3: c6ea17d, 954a7c6, d11ad95, b0ff9de), the Restroom CSV export (seat 3 e76b83a, seat 5 b5bb6d6), `studentHistory` and demo trips (seat 1). Guard result (seats e76b83a, port 8132): tapping or double-tapping a name on both kiosk tabs (Check in list, checked-in row, Last session card, active Session card, Waitlist row, Class list) does nothing: no modal, no check-in, no trip or queue change. `checkin.js` and `app.js` don't import or mention history, and there is no `.name-link` or `[data-history]` in the kiosk DOM. While the kiosk is on, `#/attendance` and `#/classes` bounce back to `#/checkin`. Read `git log seats -15` and docs/HANDOFF.md for the rest.
 Known small issue (Nam chose to leave it, round 1): on the kiosk Restroom tab, after class is over every name still shows "Join waitlist". Pressing it saves nothing and shows nothing visible (the store refuses, only the screen-reader line says why). The blue banner already says "Class is over". A 3-line fix (show "<name>: <reason>" in the existing hint line when the store returns `kind === 'error'`) was built and dropped. Do not redo it unless Nam asks.
@@ -115,11 +115,11 @@ Known small issue (Nam chose to leave it, round 1): on the kiosk Restroom tab, a
 JOBS, in this order:
  0. Baseline: `node --test`; `python3 serve.py 8132` from your worktree; Start check-in, check in by typing + Enter, Not you?, the Restroom tab (use Settings → Open Period 7 demo and the 2:15 PM preset: go, waitlist, I'm back, Go now), Teacher + PIN 1234 to leave. Note anything broken; yours → fix with Nam's yes, else post to its owner.
  1. Guard again once seat 4's CSS (`.name-link`, `.modal-wide`, `.history-*`) is on `seats`: confirm the kiosk looks and behaves the same, names still do nothing, and no `.name-link` appears there.
- 2. Anything the room asks of the kiosk lane (e.g. a route, if Nam changes his mind about a page instead of a modal: post first).
+ 2. Anything the room asks of the kiosk lane (e.g. a route, if Nam changes their mind about a page instead of a modal: post first).
 
 TESTING TIPS (round 1): a Chrome automation tab can get stuck blank after a reload (view and nav empty, no console error); it also happens on `main` code, so it is not the app. Open a fresh tab instead. The Period 7 demo clock can't go back before a demo trip that already happened (`setDemoClock` refuses it, on purpose; seats 1 and 3 confirmed). The refusal text shows in a line under the preset buttons, which is easy to miss. To start over, use Settings → Reset demo (your port only), then the preset.
 
-BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: post your HANDOFF section in the room headed "HANDOFF seat 2" (baseline findings, guard result; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with any `seats` shas. Write your next prompt as nextsessions/PASTE-SEAT2-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last), delete the Desktop copy (~/Desktop/SEAT2-NEXT-PROMPTS.md, named after your worktree folder) and run scripts/worktree-sync.sh <worktree>. Server shut down.
 ```
@@ -144,7 +144,7 @@ RULES:
 - No agents, forks or workflows. git grep; read sections, not whole files.
 - Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
 - Short bullets, simple words. Hand off before you run out of context.
-- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before he merges.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before merging.
 
 LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 1: js/store.js, js/seed.js, tests/store.test.js
@@ -155,7 +155,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
-ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
 STATE (end of round 1, 2026-11-07): `seats` has seat 3's c6ea17d feat(history): add student history modal (js/views/history.js, `openStudentHistory(classId, studentId)`), 954a7c6 / d11ad95 / b0ff9de names open it on Attendance, the Restroom Students table and the Classes roster (`button.name-link`; `data-history` on Attendance and Restroom, `data-a="history"` on Classes), e76b83a Export CSV on the Restroom tab (`restroom-<slug>-<date>.csv` from seat 5's `RESTROOM_HEADER` + `restroomRows`). Out now, Waitlist and Completed trips stay plain text on purpose (Nam's choice). Read `git log seats -15` and docs/HANDOFF.md for the rest.
 
@@ -165,7 +165,7 @@ JOBS, in this order:
  2. Fix what seat 6's walk or Nam's use turns up. Ask before adding anything: PRODUCT.md still says no charts, range views or reports.
  3. Anything the room hands this seat.
 
-BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: post your HANDOFF section in the room headed "HANDOFF seat 3" (what landed with shas, what's open; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with your `seats` shas and what other seats must know. Write your next prompt as nextsessions/PASTE-SEAT3-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last), delete the Desktop copy (~/Desktop/SEAT3-NEXT-PROMPTS.md) and run scripts/worktree-sync.sh <worktree>. Server shut down.
 ```
@@ -190,7 +190,7 @@ RULES:
 - No agents, forks or workflows. git grep; read sections, not whole files.
 - Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
 - Short bullets, simple words. Hand off before you run out of context.
-- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before he merges.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before merging.
 
 LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 1: js/store.js, js/seed.js, tests/store.test.js
@@ -201,7 +201,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
-ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
 STATE (end of round 1, 2026-11-07): `seats` has seat 4's 82293c3 style(table): add name-link button and 5005de6 style(modal): add wide modal and history styles (css/styles.css only; no new tokens, no modal.js change). `.name-link` looks like the plain name (same font, weight, color; `.away` stays gray), underlines on hover, uses the global focus ring, keeps the ellipsis in `.list-title`. `.modal-wide` is 720px (12px gutter and full width on phones), the body scrolls. `.history-table` shares the `.table` rules (nowrap on `.tabular` and every cell but the last, the last cell breaks long text); `.history-counts`, `.history-section`, `.history-section > .muted` are styled. Seat 3's history.js, name links and the Restroom CSV export are on `seats` too. Read `git log seats -15` and docs/HANDOFF.md for the rest.
 Testing notes: resizing the Chrome window did not change the viewport, so check phone width in a 390px same-origin iframe (e.g. replace the body with `<iframe src="/#/attendance" style="width:390px;height:800px">` and script it through `contentWindow`). A tab can go blank after a reload (also on main); open a fresh tab instead. Load the demo trips by clearing only your own port's localStorage.
@@ -209,10 +209,10 @@ Testing notes: resizing the Chrome window did not change the viewport, so check 
 JOBS, in this order:
  0. Baseline: `node --test`; `python3 serve.py 8134` from your worktree; click a name on Attendance, Restroom and Classes; open a student with a week of days and several trips at desktop and phone width; sidebar open and collapsed.
  1. Fix what seat 6's walk or Nam's use turns up in the look (styles, modal, sidebar, shell). Anything wrong in another seat's file → post it to its owner.
- 2. js/modal.js has no Tab trap: Tab inside any modal moves focus out to the sidebar after the close button (old behavior, found by seat 6). It's under Needs Nam in OPEN-ASKS: wait for his yes in your chat; then keep Tab inside the open modal and keep Esc and focus return as they are. Post before you change it: every seat opens modals through it.
+ 2. js/modal.js has no Tab trap: Tab inside any modal moves focus out to the sidebar after the close button (old behavior, found by seat 6). It's under Needs Nam in OPEN-ASKS: wait for Nam's yes in your chat; then keep Tab inside the open modal and keep Esc and focus return as they are. Post before you change it: every seat opens modals through it.
  3. Anything the room hands this seat.
 
-BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: post your HANDOFF section in the room headed "HANDOFF seat 4" (what landed with shas, what's open; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with your `seats` shas and what other seats must know. Write your next prompt as nextsessions/PASTE-SEAT4-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last), delete the Desktop copy (~/Desktop/SEAT4-NEXT-PROMPTS.md) and run scripts/worktree-sync.sh <worktree>. Server shut down.
 ```
@@ -237,7 +237,7 @@ RULES:
 - No agents, forks or workflows. git grep; read sections, not whole files.
 - Show your jobs as live tasks (TaskCreate / TodoWrite) from the first minute: one in progress, done the moment it's done, new asks added as they come. Tool missing: say so, keep a ☐/☑ list.
 - Short bullets, simple words. Hand off before you run out of context.
-- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before he merges.
+- Look stays plain and still: no pills, no animations, no new shapes, no restructured Attendance page. UI changes commit to `seats` without waiting for Nam (`seats` never deploys). Post each UI sha with where to see it (page and steps); Nam reviews the whole round once, on seat 6's port, before merging.
 
 LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 1: js/store.js, js/seed.js, tests/store.test.js
@@ -248,7 +248,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
-ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
 STATE (end of round 1, 2026-11-07): `seats` has seat 5's b5bb6d6 feat(csv): add restroom export rows (RESTROOM_HEADER and restroomRows(cls, date, trips) in js/csv.js, 5 tests in tests/csv.test.js, 43 pass at that point). Seat 3 wires the Export CSV button on the Restroom tab to it. Read `git log seats -15` and docs/HANDOFF.md for the rest.
 
@@ -257,7 +257,7 @@ JOBS, in this order:
  1. Check the restroom export end to end once seat 3's button is on `seats`: Load demo, go to a past day with trips (a student has two trips in one day), press Export CSV on the Restroom tab, open the file in a spreadsheet. Expect the BOM to be fine, filename `restroom-<slug>-<date>.csv`, columns as in the contract, a trip still out has empty Back and Minutes out. Anything wrong in csv.js → fix it with a test; anything in the button → tell seat 3.
  2. Anything the room hands this seat (a date or time helper, name search, Settings copy). Post the name before adding it.
 
-BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: post your HANDOFF section in the room headed "HANDOFF seat 5" (what landed with shas, what's open; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with your `seats` shas and what other seats must know. Write your next prompt as nextsessions/PASTE-SEAT5-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last) and run scripts/worktree-sync.sh <worktree>. Server shut down.
 ```
@@ -294,7 +294,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
-ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
+ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; Nam's yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
 
 STATE (end of round 1, 2026-11-07): round 1 added the student history window (click a name on Attendance, the Restroom tab's student list or the Classes roster; never the kiosk), a Restroom Export CSV (`restroom-<slug>-<date>.csv`, one row per trip) and demo restroom trips. Saved shape: students gained an optional `addedOn` ('YYYY-MM-DD'); history starts from it. Round 1 checks all passed (baseline, kiosk guard, old backups, exports); see docs/HANDOFF.md for shas, what is open and Nam's decisions. Seat 4's history CSS landed (82293c3, 5005de6) and was re-walked at desktop width and in a 390px iframe. Open at the end of round 1: neither export has been opened in Sheets or Excel by a seat; modal.js has no Tab trap (old); the kiosk still says "Join waitlist" after trips close (Nam said drop it).
 
@@ -308,9 +308,9 @@ JOBS, in this order:
  4. Docs to match what shipped (README.md, PRODUCT.md). Made-up names only. Keep PRODUCT.md's "no charts, range views or reports".
  5. Merge each seat's "HANDOFF seat <n>" room post into docs/HANDOFF.md (new round on top).
 
-REVIEW FOR NAM (end of round): leave `python3 serve.py 8136` running from your worktree, on `seats` head, with demo data loaded, and post one list in the room and in your HANDOFF: every UI change this round, each with its sha, page and steps to see it. Shut the server down when Nam says he's done.
+REVIEW FOR NAM (end of round): leave `python3 serve.py 8136` running from your worktree, on `seats` head, with demo data loaded, and post one list in the room and in your HANDOFF: every UI change this round, each with its sha, page and steps to see it. Shut the server down when Nam says they're done.
 
-BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for Nam's yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: your own HANDOFF section in docs/HANDOFF.md. Room post with all `seats` shas this round, for Nam to review and merge. Write your next prompt as nextsessions/PASTE-SEAT6-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL). After the other seats' PASTE files have landed, run scripts/next-prompts.sh <worktree> (from a worktree folder named `class-checkin`), commit nextsessions/NEXT-PROMPTS.md with it, delete the stray Desktop copy if its name is not ~/Desktop/CLASS-CHECKIN-NEXT-PROMPTS.md, then scripts/worktree-sync.sh <worktree>. Server 8137 shut down and its tab closed; 8136 stays up for Nam's review (see REVIEW FOR NAM).
 ```
