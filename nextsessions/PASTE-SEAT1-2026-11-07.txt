@@ -23,7 +23,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 3: js/views/attendance.js, restroom.js, classes.js, timeinput.js, new js/views/history.js
 - Seat 4: css/styles.css, index.html, js/icons.js, js/modal.js, js/views/sidebar.js
 - Seat 5: js/views/settings.js, js/csv.js, js/names.js, js/format.js, tests/format.test.js, new tests/csv.test.js
-- Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md
+- Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
 ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
@@ -42,5 +42,7 @@ JOBS, in this order:
  0. Baseline: `node --test` (all pass); `python3 serve.py 8131` from your worktree; Attendance, Restroom tab (‹ to a past day shows demo trips), click a name → history, Settings → Download backup → Restore. Note anything broken; yours → fix, else post to its owner.
  1. Whatever Nam asks for this round that touches saved state, migrations, backup/restore or demo data. Saved-shape changes: optional field, safe default, an old-save test, post first.
  2. Anything the room asks of the data lane.
+
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: post your HANDOFF section in the room headed "HANDOFF seat 1" (what landed with shas, what's open; seat 6 merges it into docs/HANDOFF.md; you never edit that file). Room post with your `seats` shas and what other seats must know. Write your next prompt as nextsessions/PASTE-SEAT1-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL), commit it, run scripts/next-prompts.sh <worktree>, then delete nextsessions/NEXT-PROMPTS.md from your worktree (seat 6 commits it last) and run scripts/worktree-sync.sh <worktree>. Server shut down.

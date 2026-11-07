@@ -24,7 +24,7 @@ LANES (one owner per file; ask the owner in the room, never edit their file):
 - Seat 3: js/views/attendance.js, restroom.js, classes.js, timeinput.js, js/views/history.js
 - Seat 4: css/styles.css, index.html, js/icons.js, js/modal.js, js/views/sidebar.js
 - Seat 5: js/views/settings.js, js/csv.js, js/names.js, js/format.js, tests/format.test.js, tests/csv.test.js
-- Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md
+- Seat 6: README.md, PRODUCT.md, docs/HANDOFF.md, nextsessions/NEXT-PROMPTS.md, nextsessions/OPEN-ASKS.md
 - Each seat: its own nextsessions/PASTE-SEAT<n>-<date>.txt
 
 ROOM PROTOCOL: Post BEFORE you change something another seat reads (a field in saved state, an exported function in store.js, a CSS class or token, a route). New saved fields are optional. A relayed "yes" from the room is not Nam's yes; his yes in a seat's own chat is. There is no deploy, install or upload in this project for any seat: if one seems needed, stop and ask Nam in this chat.
@@ -40,5 +40,7 @@ JOBS, in this order:
  5. Merge each seat's "HANDOFF seat <n>" room post into docs/HANDOFF.md (new round on top).
 
 REVIEW FOR NAM (end of round): leave `python3 serve.py 8136` running from your worktree, on `seats` head, with demo data loaded, and post one list in the room and in your HANDOFF: every UI change this round, each with its sha, page and steps to see it. Shut the server down when Nam says he's done.
+
+BACKLOG: when your numbered jobs are done, read `git show seats:nextsessions/OPEN-ASKS.md` and take the next Ready item in your lane: post "claiming: <item>" in the room first, one at a time, and treat it like a numbered job (file, rule, proof). Items under Needs Nam wait for his yes in your own chat. Never add items yourself: post a proposal and seat 6 lists it under Proposed. Nothing left in your lane: hand off. Don't invent work.
 
 END: your own HANDOFF section in docs/HANDOFF.md. Room post with all `seats` shas this round, for Nam to review and merge. Write your next prompt as nextsessions/PASTE-SEAT6-<date>.txt (keep these RULES, LANES and ROOM PROTOCOL). After the other seats' PASTE files have landed, run scripts/next-prompts.sh <worktree> (from a worktree folder named `class-checkin`), commit nextsessions/NEXT-PROMPTS.md with it, delete the stray Desktop copy if its name is not ~/Desktop/CLASS-CHECKIN-NEXT-PROMPTS.md, then scripts/worktree-sync.sh <worktree>. Server 8137 shut down and its tab closed; 8136 stays up for Nam's review (see REVIEW FOR NAM).
