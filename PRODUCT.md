@@ -27,8 +27,8 @@ A single-classroom tool that never sends student names anywhere. Everything live
 - The kiosk runs all period on the Chromebook at the door, locked behind a teacher PIN (default 1234; casual-tap protection, not security).
 - The teacher uses the same device and browser for Attendance, since data lives in that browser's `localStorage`.
 - Skyward is the school's system of record; this app feeds it by hand. Export CSV is a way to open the day in Sheets or Excel: the attendance file has Date, Class, Student, Status, Check-in time and Minutes late, and the Restroom tab's file has one row per trip (Date, Class, Student, Trip, Out, Back, Minutes out, Override reason). The Backup in Settings is what protects the data.
-- Each class has a start time, an optional end time, a number of "late after" minutes and an optional "absent after" number (a single day can have its own times). Statuses come from check-in times against those cutoffs: Present, Late, Absent for an arrival past the absent cutoff, Not yet (hasn't checked in), and Absent for no check-in once the teacher finalizes the day or the day is over. The teacher can override with P / L / A and undo the override.
-- Restroom trips are limited by capacity (default 1 student) and one number of minutes (default 10) set in Settings: no trips in the first or the last that many minutes of class. The last minutes only apply to a class with an end time, and nobody joins the waitlist once trips have closed. Students who are out can always come back. Students who can't go yet wait in line; the teacher can override with a reason.
+- Each class has a start time, an optional end time, a number of "late after" minutes and an optional "absent after" number (a single day can have its own times). Statuses come from check-in times against those cutoffs: Present, Late, Absent for an arrival past the absent cutoff, Not yet (hasn't checked in), and Absent for no check-in once the teacher finalizes the day or the day is over. A student added to the roster later is "Not added yet", not Absent, on days before they joined (unless the teacher edited that day or they checked in); older saves have no join date and keep every day as it was. The teacher can override with P / L / A and undo the override.
+- Restroom trips are limited by capacity (default 1 student) and one number of minutes (default 10) set in Settings: no trips in the first or the last that many minutes of class. The last minutes only apply to a class with an end time, and nobody joins the waitlist once trips have closed (the kiosk then shows "Trips closed" or "Class is over" in place of the button). Students who are out can always come back. Students who can't go yet wait in line; the teacher can override with a reason.
 
 ## Capabilities and Constraints
 
@@ -57,4 +57,4 @@ A single-classroom tool that never sends student names anywhere. Everything live
 
 ## Accessibility & Inclusion
 
-WCAG 2.2 AA: 4.5:1 text contrast, full keyboard operation (the kiosk is keyboard-first), visible focus, and screen-reader announcements for state changes such as check-ins.
+WCAG 2.2 AA: 4.5:1 text contrast, full keyboard operation (the kiosk is keyboard-first), visible focus that stays inside an open window (Tab cycles in it, Esc closes it), and screen-reader announcements for state changes such as check-ins.
