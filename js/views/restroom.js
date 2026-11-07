@@ -82,8 +82,8 @@ export function restroomHtml(cls, date) {
       action = `<button class="btn-link" data-r="override" data-student="${s.id}">Override</button>
         <button class="btn-secondary" data-r="request" data-student="${s.id}">Send out</button>`;
     }
-    // Not checked in (or absent): the name is grayed so it's clear who isn't in the room.
-    const away = ['notyet', 'absent'].includes(statusFor(cls, date, s.id));
+    // Not checked in (or absent, or not on the roster yet that day): the name is grayed so it's clear who isn't in the room.
+    const away = ['notyet', 'absent', 'notadded'].includes(statusFor(cls, date, s.id));
     return `
       <tr>
         <td class="student-name${away ? ' away' : ''}"><button class="name-link" data-history="${s.id}">${escapeHtml(s.name)}</button></td>
