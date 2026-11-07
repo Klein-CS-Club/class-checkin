@@ -14,7 +14,7 @@ const memoryStorage = (initial = {}) => {
 globalThis.localStorage = memoryStorage();
 
 const store = await import('../js/store.js');
-const { atTime, dateKey } = await import('../js/format.js');
+const { atTime, dateKey, addDays } = await import('../js/format.js');
 
 const realNow = Date.now;
 const day = dateKey(new Date());
@@ -234,6 +234,81 @@ test('removing a student or a class removes their trips and waitlist spots', () 
   assert.equal(store.getState().queue.length, 0);
   store.deleteClass(classId);
   assert.equal(store.getState().trips.length, 0);
+});
+
+// ---------- Student history ----------
+const clockOn = (date, hm) => { Date.now = () => atTime(date, hm); };
+const daysAgo = (n) => addDays(day, -n);
+
+test('student history lists class days newest first with status, check-in and minutes late', () => {
+  clockOn(daysAgo(2), '08:03');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '08:09');
+  store.checkIn(classId, ann);
+  clock('08:02');
+  store.checkIn(classId, bob);
+  const { days } = store.studentHistory(classId, ann);
+  assert.deepEqual(days.map((d) => d.date), [day, daysAgo(1), daysAgo(2)]);
+  assert.deepEqual(days.map((d) => d.status), ['notyet', 'late', 'present']);
+  assert.deepEqual(days.map((d) => d.minutesLate), [null, 9, null]);
+  assert.equal(days[0].checkIn, null);
+  assert.equal(days[2].checkIn.at, atTime(daysAgo(2), '08:03'));
+});
+
+test('student history counts present, late, absent and not yet', () => {
+  clockOn(daysAgo(3), '08:01');
+  store.checkIn(classId, bob); // Ann has no check-in that day, which is over: absent
+  clockOn(daysAgo(2), '08:03');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '08:09');
+  store.checkIn(classId, ann);
+  clock('08:02');
+  store.checkIn(classId, bob);
+  assert.deepEqual(store.studentHistory(classId, ann).counts, { present: 1, late: 1, absent: 1, notyet: 1 });
+});
+
+test('an edited day shows as overridden with no minutes late', () => {
+  clockOn(daysAgo(1), '08:09');
+  store.checkIn(classId, ann);
+  clock('08:00');
+  store.setOverride(classId, daysAgo(1), ann, 'present');
+  const [edited] = store.studentHistory(classId, ann).days;
+  assert.deepEqual([edited.status, edited.overridden, edited.minutesLate], ['present', true, null]);
+});
+
+test('student history lists only that student’s trips in that class, with the override reason', () => {
+  clockOn(daysAgo(1), '08:20');
+  store.markOut(classId, daysAgo(1), ann);
+  clockOn(daysAgo(1), '08:25');
+  store.markReturned(classId, daysAgo(1), ann);
+  clock('08:15');
+  store.markOut(classId, day, ann);
+  clock('08:20');
+  store.markReturned(classId, day, ann);
+  store.markOut(classId, day, bob);
+  clock('08:25');
+  store.markReturned(classId, day, bob);
+  clock('08:32');
+  store.markOut(classId, day, ann, 'Nurse pass');
+  const { trips, days } = store.studentHistory(classId, ann);
+  assert.deepEqual(trips.map((t) => [t.date, t.departedAt, t.returnedAt, t.overrideReason]), [
+    [day, atTime(day, '08:32'), null, 'Nurse pass'],
+    [day, atTime(day, '08:15'), atTime(day, '08:20'), ''],
+    [daysAgo(1), atTime(daysAgo(1), '08:20'), atTime(daysAgo(1), '08:25'), ''],
+  ]);
+  assert.deepEqual(days.map((d) => d.date), [day, daysAgo(1)]); // a trip makes it a class day
+});
+
+test('days with no records for the class are skipped', () => {
+  const other = store.addClass('Period 2', '09:00', 5);
+  store.addStudents(other, ['Dee Dunn']);
+  clockOn(daysAgo(2), '08:03');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '09:01');
+  store.checkIn(other, store.classById(other).students[0].id); // another class's day doesn't count here
+  clock('08:00');
+  assert.deepEqual(store.studentHistory(classId, bob).days.map((d) => [d.date, d.status]), [[daysAgo(2), 'absent']]);
+  assert.equal(store.studentHistory(classId, 'gone'), null);
 });
 
 // ---------- Period 7 demo ----------

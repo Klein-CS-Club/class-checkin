@@ -275,6 +275,38 @@ export function dayRows(classId, date) {
   }));
 }
 
+// One student's record in one class, newest first: every day the class has anything saved (a check-in,
+// an edit, a finalized day or a restroom trip) up to today, and that student's trips. Read-only.
+export function studentHistory(classId, studentId) {
+  const cls = classById(classId);
+  const student = cls?.students.find((s) => s.id === studentId);
+  if (!student) return null;
+  const prefix = `${classId}|`;
+  const today = todayFor(cls);
+  const dates = new Set([
+    ...state.checkIns.filter((x) => x.classId === classId).map((x) => x.date),
+    ...Object.keys(state.overrides).filter((k) => k.startsWith(prefix)).map((k) => k.split('|')[1]),
+    ...Object.keys(state.finalized).filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)),
+    ...state.trips.filter((t) => t.classId === classId).map((t) => t.sessionId.slice(prefix.length)),
+  ]);
+  const days = [...dates].filter((date) => date <= today).sort().reverse().map((date) => ({
+    date,
+    status: statusFor(cls, date, studentId),
+    checkIn: findCheckIn(classId, date, studentId) ?? null,
+    minutesLate: minutesLate(cls, date, studentId),
+    overridden: !!state.overrides[overrideKey(classId, date, studentId)],
+  }));
+  const trips = state.trips
+    .filter((t) => t.classId === classId && t.studentId === studentId)
+    .sort((a, b) => b.departedAt - a.departedAt)
+    .map(({ id, sessionId: sid, departedAt, returnedAt, overrideReason }) => ({
+      id, date: sid.slice(prefix.length), departedAt, returnedAt, overrideReason: overrideReason ?? '',
+    }));
+  const counts = { present: 0, late: 0, absent: 0, notyet: 0 };
+  for (const d of days) counts[d.status] += 1;
+  return { cls, student, days, trips, counts };
+}
+
 // How many students are here today (present or late, overrides included).
 export function hereToday(classId) {
   return dayRows(classId, todayFor(classById(classId))).filter((r) => r.status === 'present' || r.status === 'late').length;
