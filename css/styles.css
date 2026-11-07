@@ -378,6 +378,7 @@ button:disabled { cursor: not-allowed; }
 .status-late { color: var(--late); }
 .status-absent { color: var(--absent); }
 .status-notyet { color: var(--muted); }
+.status-notadded { color: var(--muted); }
 
 /* ---------- Attendance ---------- */
 .page-title { display: flex; flex-direction: column; min-width: 0; }
