@@ -387,3 +387,34 @@ test('an old save upgrades on load and keeps a copy of the original', async () =
   assert.equal(fresh.statusFor(cls, day, 's'), 'late');
   assert.equal(globalThis.localStorage.getItem('class-checkin-v1-backup'), saved);
 });
+
+test('student history works on an old save and a pre-trips backup, and nothing is lost', async () => {
+  const saved = JSON.stringify({
+    classes: [{ id: 'c', name: 'Old', lateAfter: '09:05', students: [{ id: 's', name: 'Sam Old' }, { id: 't', name: 'Tia Old' }] }],
+    checkIns: [
+      { id: 'x', classId: 'c', studentId: 's', date: daysAgo(1), at: atTime(daysAgo(1), '09:07') },
+      { id: 'y', classId: 'c', studentId: 't', date: day, at: atTime(day, '09:00') },
+    ],
+    overrides: {},
+  });
+  globalThis.localStorage = memoryStorage({ 'class-checkin-v1': saved });
+  const fresh = await import('../js/store.js?old-history');
+  const history = fresh.studentHistory('c', 's');
+  assert.deepEqual(history.days.map((d) => [d.date, d.status]), [[day, 'notyet'], [daysAgo(1), 'late']]);
+  assert.deepEqual(history.trips, []);
+  assert.equal(fresh.getState().checkIns.length, 2);
+  assert.equal(fresh.classById('c').students.length, 2);
+  assert.equal(globalThis.localStorage.getItem('class-checkin-v1-backup'), saved);
+
+  // A backup from before start times and trips restores, and history reads it.
+  const backup = JSON.stringify({
+    app: 'class-checkin-v1',
+    classes: [{ id: 'b', name: 'Backup', lateAfter: '08:00', students: [{ id: 'u', name: 'Uma Backup' }] }],
+    checkIns: [{ id: 'z', classId: 'b', studentId: 'u', date: daysAgo(2), at: atTime(daysAgo(2), '07:58') }],
+    overrides: {},
+  });
+  fresh.restoreBackup(fresh.readBackup(backup));
+  assert.deepEqual(fresh.studentHistory('b', 'u').days.map((d) => [d.date, d.status]), [[daysAgo(2), 'present']]);
+  assert.equal(fresh.getState().checkIns.length, 1);
+  assert.equal(fresh.getState().trips.length, 0);
+});
