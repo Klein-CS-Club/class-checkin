@@ -29,7 +29,7 @@ newest() {
   echo
   echo "As of \`$BRANCH\` at \`$main_sha\`, written $now by \`scripts/next-prompts.sh\` (rerun it after a new PASTE file lands)."
   echo
-  echo "How: \`seats up .\` in the project, paste ONE block per seat. Every block starts in PLAN MODE and tells the seat what to read."
+  echo "How: \`seats up .\` in the project, paste ONE block per seat; seat 6 goes in as \`/loop\` followed by its block. Round-one blocks start in PLAN MODE; next-round blocks post a plan to the room and start. Each block tells the seat what to read."
   echo
   if git cat-file -e $BRANCH:nextsessions/OPEN-ASKS.md 2>/dev/null; then
     git show $BRANCH:nextsessions/OPEN-ASKS.md
