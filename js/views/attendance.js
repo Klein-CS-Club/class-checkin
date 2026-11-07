@@ -6,7 +6,7 @@ import {
 } from '../store.js';
 import { escapeHtml, todayKey, addDays, dayLabel, atTime, hhmm, time12, timeLabel, parseTime } from '../format.js';
 import { showTimeHint } from './timeinput.js';
-import { toCsv, downloadCsv } from '../csv.js';
+import { toCsv, downloadCsv, RESTROOM_HEADER, restroomRows } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
 import { openStudentHistory } from './history.js';
 import { restroomHtml, refreshRestroomLive, handleRestroomClick, clearRestroomNotice } from './restroom.js';
@@ -89,7 +89,6 @@ export function renderAttendance(el) {
     el.querySelector('#title').textContent = cls?.name ?? 'Attendance';
     dateEl.value = date;
     el.querySelector('#eyebrow').textContent = restroom ? 'Restroom' : 'Attendance';
-    el.querySelector('#export').hidden = restroom;
     el.querySelector('#export').disabled = !cls;
     el.querySelector('#kiosk').disabled = !cls;
     if (!cls) {
@@ -200,7 +199,7 @@ export function renderAttendance(el) {
     } else if (t.id === 'day-times') {
       dayTimesDialog(currentClass(), date);
     } else if (t.id === 'export') {
-      exportDay(currentClass().id, date);
+      (restroom ? exportRestroom : exportDay)(currentClass().id, date);
     } else if (t.id === 'kiosk') {
       startKiosk(currentClass().id);
     }
@@ -294,6 +293,14 @@ function dayTimesDialog(cls, date) {
   });
 }
 
+const classSlug = (cls) => cls.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'class';
+
+// The Restroom tab's file: one row per trip.
+function exportRestroom(id, day) {
+  const cls = classById(id);
+  downloadCsv(`restroom-${classSlug(cls)}-${day}.csv`, toCsv(RESTROOM_HEADER, restroomRows(cls, day, restroomSummary(id, day).trips)));
+}
+
 function exportDay(id, day) {
   const cls = classById(id);
   const rows = dayRows(id, day).map((r) => [
@@ -304,6 +311,5 @@ function exportDay(id, day) {
     r.checkIn ? time12(r.checkIn.at) : '',
     r.minutesLate ?? '',
   ]);
-  const slug = cls.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  downloadCsv(`attendance-${slug || 'class'}-${day}.csv`, toCsv(['Date', 'Class', 'Student', 'Status', 'Check-in time', 'Minutes late'], rows));
+  downloadCsv(`attendance-${classSlug(cls)}-${day}.csv`, toCsv(['Date', 'Class', 'Student', 'Status', 'Check-in time', 'Minutes late'], rows));
 }
