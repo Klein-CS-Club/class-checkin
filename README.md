@@ -23,7 +23,7 @@ the latest CSS and JS. With plain `python3 -m http.server`, the browser can mix 
 you hard reload (Cmd+Shift+R). For another port, run `python3 serve.py 8140`. To use a tablet on the same Wi-Fi, open `http://<this computer's IP>:8130` on the tablet.
 Data lives in that tablet's browser.
 
-The first run loads three demo classes with made-up names and a week of history.
+The first run loads three demo classes with made-up names and a week of history, including some restroom trips.
 
 ## How it works
 
@@ -41,7 +41,9 @@ The first run loads three demo classes with made-up names and a week of history.
 - **Attendance** (`#/attendance`): shows the period picked in the sidebar. Step through days with ‹ ›. Statuses are worked out from check-in times:
   **Present** at or before the late cutoff (start time plus the late-after minutes), **Late** after it,
   **Absent** after the absent cutoff if the class has one (the check-in time is still kept), and
-  **Not yet** for everyone who hasn't checked in. **Minutes late** counts whole minutes after the start
+  **Not yet** for everyone who hasn't checked in. A student added to the roster later shows a gray **Not added yet**
+  on days before they joined (not Absent), left out of the four counts; P / L / A still work there, and
+  **Undo** goes back to Not added yet. **Minutes late** counts whole minutes after the start
   time, rounded up. The heading shows the day's times, such as "Starts 8:00 AM · Ends 8:50 AM ·
   Late after 8:05 AM · Absent after 8:15 AM". **Finalize attendance** (today only) marks everyone who hasn't checked in as
   **Absent**, and can be undone. Days that are over count as Absent without finalizing. Tap P / L / A to
@@ -61,7 +63,19 @@ The first run loads three demo classes with made-up names and a week of history.
   and needs a reason, which is saved and shown with the trip. Trips can only start on today's date, and
   a student who is still out can be marked back from any date. Set the capacity and minutes in Settings
   (0 minutes allows trips for the whole class).
-- **Export CSV** downloads the day you're looking at: Date, Class, Student, Status, Check-in time, Minutes late.
+- **Student history**: click a student's name on Attendance, on the Restroom tab's student list or on a
+  class's roster in Classes to open a wide window for that student in that class. It shows a one-line count
+  (such as "Present 12 · Late 3 · Absent 2"), then **Attendance** (every day the class has records, newest
+  first, with status, check-in time and minutes late, and "Edited" where a status was overridden) and
+  **Restroom trips** (date, out, back or "Still out", time out and the override reason). Esc or ✕ closes it.
+  A student who joined the roster later only has days from the day they were added, plus any earlier day where
+  the teacher edited a status or they checked in (older rosters show every day). It is read-only and saves
+  nothing. Tab stays inside the window until you close it. Names on the kiosk never open it.
+- **Export CSV** downloads the day you're looking at, from the page you're on. On Attendance it is
+  `attendance-<class>-<date>.csv`: Date, Class, Student, Status, Check-in time, Minutes late. On the Restroom
+  tab it is `restroom-<class>-<date>.csv`, one row per trip: Date, Class, Student, Trip, Out, Back, Minutes
+  out, Override reason. A student with two trips has two rows (Trip 1, Trip 2, in the order they left). A trip
+  that hasn't ended has no Back or Minutes out. Minutes out are whole minutes.
 - **Start check-in** locks the tablet into the kiosk for that class and hides the sidebar.
 - **Kiosk** (`#/checkin`): built for a Chromebook at the door. A dark bar shows the class, a live clock
   and date, and how many are checked in. Students type part of their name (accents optional, any word
@@ -75,7 +89,9 @@ The first run loads three demo classes with made-up names and a week of history.
   times but never late status.
 - **Kiosk Restroom tab**: a **Check in / Restroom** switch sits above the name box. On Restroom a student
   finds their name and presses one button: **Go to restroom** when they can leave now, **Join waitlist**
-  when they can't, or **Go now** when it's their turn. The right side reads top to bottom: a **Session**
+  when they can't, or **Go now** when it's their turn. Once trips have closed (the last minutes, or after
+  class), the button is replaced by plain gray text, "Trips closed" or "Class is over", because no one can
+  join the waitlist then. The right side reads top to bottom: a **Session**
   card for the student who is out (name, time out, time in, a running timer and **I'm back**; with nobody
   out it keeps the last finished trip), the **Waitlist** (students who joined, in order, each with a gray
   **Leave waitlist** button), then the **Class list**. The bar shows how many are out and waiting, and
@@ -105,12 +121,12 @@ The first run loads three demo classes with made-up names and a week of history.
 | `js/app.js` | Hash router. Forces the kiosk while it's on |
 | `js/store.js` | All state and actions; the only code that touches `localStorage` |
 | `js/names.js` | Accent-free name search, sorting by last name, "Last, First" cleanup |
-| `js/csv.js` | CSV writer (BOM, quoting, formula guard), parser for roster import, download |
+| `js/csv.js` | CSV writer (BOM, quoting, formula guard), the restroom export rows, parser for roster import, download |
 | `js/format.js` | Local dates (`YYYY-MM-DD`), times, durations, `escapeHtml` |
 | `js/seed.js` | Demo classes, made-up names only |
 | `js/modal.js`, `js/icons.js` | Modal, confirm dialog and inline SVG icons from the cash register |
-| `js/views/*.js` | Sidebar, check-in kiosk, Attendance, Restroom tab, Classes, Settings. The club support email is `SUPPORT_EMAIL` in `settings.js` |
-| `tests/store.test.js` | Tests for the store: late times, finalizing, restroom rules, backup. Run `node --test` |
+| `js/views/*.js` | Sidebar, check-in kiosk, Attendance, Restroom tab, Classes, Settings, and the student history window (`history.js`, opened from Attendance, Restroom and Classes, never from the kiosk). The club support email is `SUPPORT_EMAIL` in `settings.js` |
+| `tests/*.test.js` | `store.test.js` (late times, finalizing, restroom rules, student history, late joiners, backup and old saves), `csv.test.js` (the restroom export rows, names with commas and quotes), `format.test.js`. Run `node --test` |
 | `package.json` | Only tells Node the files are modules so the tests can load them; there are no dependencies |
 
 ## Limits

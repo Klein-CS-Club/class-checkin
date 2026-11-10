@@ -6,8 +6,9 @@ import {
 } from '../store.js';
 import { escapeHtml, todayKey, addDays, dayLabel, atTime, hhmm, time12, timeLabel, parseTime } from '../format.js';
 import { showTimeHint } from './timeinput.js';
-import { toCsv, downloadCsv } from '../csv.js';
+import { toCsv, downloadCsv, RESTROOM_HEADER, restroomRows } from '../csv.js';
 import { confirmDialog, openModal } from '../modal.js';
+import { openStudentHistory } from './history.js';
 import { restroomHtml, refreshRestroomLive, handleRestroomClick, clearRestroomNotice } from './restroom.js';
 
 let date = todayKey();
@@ -73,7 +74,7 @@ export function renderAttendance(el) {
           <input type="date" id="date" aria-label="Date">
           <button class="action" data-step="1" aria-label="Next day">${icon('chevronRight')}</button>
         </div>
-        <button class="btn-secondary" id="export">${icon('download')}Export CSV</button>
+        <button class="btn-secondary" id="export">${icon('download')}Export ${restroom ? 'restroom' : 'attendance'} CSV</button>
         <button class="btn-primary" id="kiosk">${icon('play')}Start check-in</button>
       </header>
       <div class="page-body" id="body"></div>
@@ -88,7 +89,6 @@ export function renderAttendance(el) {
     el.querySelector('#title').textContent = cls?.name ?? 'Attendance';
     dateEl.value = date;
     el.querySelector('#eyebrow').textContent = restroom ? 'Restroom' : 'Attendance';
-    el.querySelector('#export').hidden = restroom;
     el.querySelector('#export').disabled = !cls;
     el.querySelector('#kiosk').disabled = !cls;
     if (!cls) {
@@ -130,7 +130,7 @@ export function renderAttendance(el) {
             <tbody>
               ${rows.map((r) => `
                 <tr>
-                  <td class="student-name">${escapeHtml(r.student.name)}</td>
+                  <td class="student-name"><button class="name-link" data-history="${r.student.id}">${escapeHtml(r.student.name)}</button></td>
                   <td class="tabular muted">${r.checkIn ? escapeHtml(time12(r.checkIn.at)) : '—'}</td>
                   <td class="tabular muted">${r.minutesLate ?? '—'}</td>
                   <td class="status-col">
@@ -152,6 +152,7 @@ export function renderAttendance(el) {
   el.querySelector('.page').addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if (!t) return;
+    if (t.dataset.history) return openStudentHistory(currentClass().id, t.dataset.history);
     if (handleRestroomClick(t, currentClass(), date, render)) return;
     if (t.dataset.demoTime) {
       const cls = currentClass();
@@ -198,7 +199,7 @@ export function renderAttendance(el) {
     } else if (t.id === 'day-times') {
       dayTimesDialog(currentClass(), date);
     } else if (t.id === 'export') {
-      exportDay(currentClass().id, date);
+      (restroom ? exportRestroom : exportDay)(currentClass().id, date);
     } else if (t.id === 'kiosk') {
       startKiosk(currentClass().id);
     }
@@ -292,6 +293,14 @@ function dayTimesDialog(cls, date) {
   });
 }
 
+const classSlug = (cls) => cls.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'class';
+
+// The Restroom tab's file: one row per trip.
+function exportRestroom(id, day) {
+  const cls = classById(id);
+  downloadCsv(`restroom-${classSlug(cls)}-${day}.csv`, toCsv(RESTROOM_HEADER, restroomRows(cls, day, restroomSummary(id, day).trips)));
+}
+
 function exportDay(id, day) {
   const cls = classById(id);
   const rows = dayRows(id, day).map((r) => [
@@ -302,6 +311,5 @@ function exportDay(id, day) {
     r.checkIn ? time12(r.checkIn.at) : '',
     r.minutesLate ?? '',
   ]);
-  const slug = cls.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  downloadCsv(`attendance-${slug || 'class'}-${day}.csv`, toCsv(['Date', 'Class', 'Student', 'Status', 'Check-in time', 'Minutes late'], rows));
+  downloadCsv(`attendance-${classSlug(cls)}-${day}.csv`, toCsv(['Date', 'Class', 'Student', 'Status', 'Check-in time', 'Minutes late'], rows));
 }

@@ -281,6 +281,12 @@ button:disabled { cursor: not-allowed; }
 }
 .modal-backdrop.closing .modal { animation: pop-out 150ms ease-in forwards; }
 .modal-sm { width: min(420px, 100%); }
+.modal-wide { width: min(720px, 100%); }
+/* On a phone the wide modal fills the width: a 12px gutter instead of 24px. */
+@media (max-width: 760px) {
+  .modal-backdrop:has(> .modal-wide) { padding: 12px; }
+  .modal-wide { max-height: calc(100dvh - 24px); }
+}
 .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
 .modal-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
 .modal-close {
@@ -372,6 +378,7 @@ button:disabled { cursor: not-allowed; }
 .status-late { color: var(--late); }
 .status-absent { color: var(--absent); }
 .status-notyet { color: var(--muted); }
+.status-notadded { color: var(--muted); }
 
 /* ---------- Attendance ---------- */
 .page-title { display: flex; flex-direction: column; min-width: 0; }
@@ -389,6 +396,13 @@ button:disabled { cursor: not-allowed; }
 }
 .page-head button:disabled { opacity: .4; }
 .student-name { font-weight: 500; }
+.student-name.away { color: var(--muted); }
+/* A name that opens the student's history. It looks like the text it replaces (same font, weight and color,
+   so .away stays gray) and only gets an underline on hover; keyboard focus uses the global ring. */
+.name-link { max-width: 100%; font: inherit; color: inherit; text-align: left; }
+.name-link:hover { text-decoration: underline; }
+/* Inside the Classes roster the title is cut off with an ellipsis, so the button has to be the block that does it. */
+.list-title .name-link { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .table .status-col { text-align: right; }
 .status-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .status-text { min-width: 56px; font-size: 13px; font-weight: 600; text-align: left; }
@@ -711,8 +725,8 @@ button:disabled { cursor: not-allowed; }
 .panel-body { padding: 12px 16px 16px; }
 .panel-empty { padding: 28px 16px; color: var(--muted); text-align: center; font-size: 13px; }
 
-.table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.table th {
+.table, .history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th, .history-table th {
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   color: var(--muted);
@@ -723,10 +737,24 @@ button:disabled { cursor: not-allowed; }
   text-align: left;
   white-space: nowrap;
 }
-.table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-.table tr:last-child td { border-bottom: 0; }
-.table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.table td, .history-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table tr:last-child td, .history-table tr:last-child td { border-bottom: 0; }
+.table .num, .history-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .table .muted { color: var(--muted); }
+
+/* ---------- Student history (modal) ----------
+   The history table is the same table as above; these are just the modal's own pieces. The table sits
+   flush with the modal's text instead of inside a panel, so its first and last cells lose their side padding. */
+.history-counts { margin: 0 0 20px; color: var(--text-2); }
+.history-section { min-width: 0; overflow-x: auto; }
+.history-section + .history-section { margin-top: 24px; }
+.history-section h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.history-table th:first-child, .history-table td:first-child { padding-left: 0; }
+.history-table th:last-child, .history-table td:last-child { padding-right: 0; }
+.history-table td:not(:last-child), .history-table .tabular { white-space: nowrap; }
+.history-table .tabular { font-variant-numeric: tabular-nums; }
+.history-table td:last-child { overflow-wrap: anywhere; }
+.history-section > .muted { margin: 0; padding: 12px 0; font-size: 13px; }
 
 .list-row {
   display: flex;
@@ -770,6 +798,8 @@ button.list-row:hover { background: var(--surface-2); }
   /* When the row is too narrow, Edited · Undo wraps onto its own line above the buttons. */
   .status-cell { flex-wrap: wrap-reverse; }
   .edited-undo { order: 1; }
+  /* In the history modal the stacked rows line up with the heading, not 16px in. */
+  .history-table td { padding-left: 0; padding-right: 0; }
 }
 /* ---------- Attendance and Restroom tabs ---------- */
 .tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; border-bottom: 1px solid var(--border-strong); }

@@ -4,6 +4,7 @@ import { escapeHtml, timeLabel, parseTime } from '../format.js';
 import { showTimeHint } from './timeinput.js';
 import { namesFromCsv } from '../csv.js';
 import { openModal, confirmDialog } from '../modal.js';
+import { openStudentHistory } from './history.js';
 
 export function renderClasses(el) {
   el.innerHTML = `
@@ -36,7 +37,7 @@ export function renderClasses(el) {
               ${c.students.length
                 ? sortedStudents(c).map((s) => `
                   <div class="list-row">
-                    <span class="list-text"><span class="list-title">${escapeHtml(s.name)}</span></span>
+                    <span class="list-text"><span class="list-title"><button class="name-link" data-a="history" data-class="${c.id}" data-student="${s.id}">${escapeHtml(s.name)}</button></span></span>
                     <button class="icon-btn" data-a="rename" data-class="${c.id}" data-student="${s.id}" aria-label="Rename ${escapeHtml(s.name)}">${icon('edit')}</button>
                     <button class="icon-btn danger" data-a="remove" data-class="${c.id}" data-student="${s.id}" aria-label="Remove ${escapeHtml(s.name)}">${icon('trash')}</button>
                   </div>`).join('')
@@ -55,6 +56,7 @@ export function renderClasses(el) {
     const student = cls.students.find((s) => s.id === t.dataset.student);
     if (t.dataset.a === 'edit-class') classDialog(cls);
     else if (t.dataset.a === 'add-students') addStudentsDialog(cls);
+    else if (t.dataset.a === 'history' && student) openStudentHistory(cls.id, student.id);
     else if (t.dataset.a === 'rename' && student) renameDialog(cls, student);
     else if (t.dataset.a === 'remove' && student) {
       const ok = await confirmDialog({

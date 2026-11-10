@@ -12,6 +12,7 @@ export const STATUSES = {
   late: 'Late',
   absent: 'Absent',
   notyet: 'Not yet',
+  notadded: 'Not added yet', // a date before the student joined the roster
 };
 
 function initialState() {
@@ -20,7 +21,8 @@ function initialState() {
     settings: { pin: '1234', sidebarExpanded: true, capacity: 1, restrictionMinutes: 10 },
     currentClassId: null, // the period picked in the sidebar
     // [{ id, name, startTime: 'HH:mm', endTime: 'HH:mm' | null, lateMinutes, absentMinutes: n | null,
-    //    days: { date: { startTime, endTime, lateMinutes, absentMinutes } }, students: [{ id, name }] }]
+    //    days: { date: { startTime, endTime, lateMinutes, absentMinutes } }, students: [{ id, name, addedOn? }] }]
+    //    addedOn ('YYYY-MM-DD') is when the student joined the roster; older students don't have one.
     classes: [],
     checkIns: [],    // [{ id, classId, studentId, date: 'YYYY-MM-DD', at: ms }]
     overrides: {},   // { 'classId|date|studentId': 'present' | 'late' | 'absent' }
@@ -135,7 +137,7 @@ export function addStudents(classId, names) {
   for (const raw of names) {
     const name = tidyName(raw);
     if (!name || [...cls.students, ...added].some((s) => sameName(s.name, name))) continue;
-    added.push({ id: uid(), name });
+    added.push({ id: uid(), name, addedOn: todayFor(cls) });
   }
   if (added.length) updateClass(classId, { students: [...cls.students, ...added] });
   return added.length;
@@ -241,7 +243,8 @@ export function bellFor(cls, date) {
 
 // An override wins. Otherwise a check-in at or before the late cutoff is present, after it is late,
 // and after the absent cutoff (if the class has one) is absent. With no check-in, the student is
-// absent once the day is finalized or over, else "not yet".
+// absent once the day is finalized or over, else "not yet". Before the day a student was added to the
+// roster they aren't absent: they're "not added yet" (an edit or a check-in still counts).
 export function statusFor(cls, date, studentId) {
   const override = state.overrides[overrideKey(cls.id, date, studentId)];
   if (override) return override;
@@ -251,6 +254,8 @@ export function statusFor(cls, date, studentId) {
     if (absentAt !== null && entry.at > absentAt) return 'absent';
     return entry.at <= cutoffAt ? 'present' : 'late';
   }
+  const addedOn = cls.students.find((s) => s.id === studentId)?.addedOn;
+  if (addedOn && date < addedOn) return 'notadded';
   return isFinalized(cls.id, date) || date < todayFor(cls) ? 'absent' : 'notyet';
 }
 
@@ -273,6 +278,43 @@ export function dayRows(classId, date) {
     minutesLate: minutesLate(cls, date, student.id),
     overridden: !!state.overrides[overrideKey(classId, date, student.id)],
   }));
+}
+
+// One student's record in one class, newest first: every day the class has anything saved (a check-in,
+// an edit, a finalized day or a restroom trip) up to today, and that student's trips. Read-only.
+export function studentHistory(classId, studentId) {
+  const cls = classById(classId);
+  const student = cls?.students.find((s) => s.id === studentId);
+  if (!student) return null;
+  const prefix = `${classId}|`;
+  const today = todayFor(cls);
+  const dates = new Set([
+    ...state.checkIns.filter((x) => x.classId === classId).map((x) => x.date),
+    ...Object.keys(state.overrides).filter((k) => k.startsWith(prefix)).map((k) => k.split('|')[1]),
+    ...Object.keys(state.finalized).filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)),
+    ...state.trips.filter((t) => t.classId === classId).map((t) => t.sessionId.slice(prefix.length)),
+  ]);
+  // Days before the student joined the roster aren't theirs, unless the teacher edited that day or they checked
+  // in. Students from older saves have no date: every day.
+  const joined = student.addedOn ?? '';
+  const theirs = (date) => date >= joined
+    || !!state.overrides[overrideKey(classId, date, studentId)] || !!findCheckIn(classId, date, studentId);
+  const days = [...dates].filter((date) => date <= today && theirs(date)).sort().reverse().map((date) => ({
+    date,
+    status: statusFor(cls, date, studentId),
+    checkIn: findCheckIn(classId, date, studentId) ?? null,
+    minutesLate: minutesLate(cls, date, studentId),
+    overridden: !!state.overrides[overrideKey(classId, date, studentId)],
+  }));
+  const trips = state.trips
+    .filter((t) => t.classId === classId && t.studentId === studentId)
+    .sort((a, b) => b.departedAt - a.departedAt)
+    .map(({ id, sessionId: sid, departedAt, returnedAt, overrideReason }) => ({
+      id, date: sid.slice(prefix.length), departedAt, returnedAt, overrideReason: overrideReason ?? '',
+    }));
+  const counts = { present: 0, late: 0, absent: 0, notyet: 0 };
+  for (const d of days) if (d.status in counts) counts[d.status] += 1;
+  return { cls, student, days, trips, counts };
 }
 
 // How many students are here today (present or late, overrides included).

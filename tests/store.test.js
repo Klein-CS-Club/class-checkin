@@ -14,7 +14,7 @@ const memoryStorage = (initial = {}) => {
 globalThis.localStorage = memoryStorage();
 
 const store = await import('../js/store.js');
-const { atTime, dateKey } = await import('../js/format.js');
+const { atTime, dateKey, addDays } = await import('../js/format.js');
 
 const realNow = Date.now;
 const day = dateKey(new Date());
@@ -25,7 +25,9 @@ let classId, ann, bob, cy;
 beforeEach(() => {
   store.resetAll();
   classId = store.addClass('Period 1', '08:00', 5);
+  Date.now = () => atTime(addDays(day, -30), '07:00'); // on the roster well before any test's days
   store.addStudents(classId, ['Ann Adams', 'Bob Brown', 'Cy Clark']);
+  Date.now = realNow;
   [ann, bob, cy] = store.sortedStudents(store.classById(classId)).map((s) => s.id);
 });
 afterEach(() => { Date.now = realNow; });
@@ -114,7 +116,7 @@ test('students stay not-yet until finalized, and finalizing can be undone', () =
 });
 
 test('a day that is over counts as absent without finalizing', () => {
-  assert.equal(store.statusFor(store.classById(classId), '2020-01-01', ann), 'absent');
+  assert.equal(store.statusFor(store.classById(classId), daysAgo(1), ann), 'absent');
 });
 
 // ---------- Restroom ----------
@@ -236,6 +238,131 @@ test('removing a student or a class removes their trips and waitlist spots', () 
   assert.equal(store.getState().trips.length, 0);
 });
 
+// ---------- Student history ----------
+const clockOn = (date, hm) => { Date.now = () => atTime(date, hm); };
+const daysAgo = (n) => addDays(day, -n);
+
+test('student history lists class days newest first with status, check-in and minutes late', () => {
+  clockOn(daysAgo(2), '08:03');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '08:09');
+  store.checkIn(classId, ann);
+  clock('08:02');
+  store.checkIn(classId, bob);
+  const { days } = store.studentHistory(classId, ann);
+  assert.deepEqual(days.map((d) => d.date), [day, daysAgo(1), daysAgo(2)]);
+  assert.deepEqual(days.map((d) => d.status), ['notyet', 'late', 'present']);
+  assert.deepEqual(days.map((d) => d.minutesLate), [null, 9, null]);
+  assert.equal(days[0].checkIn, null);
+  assert.equal(days[2].checkIn.at, atTime(daysAgo(2), '08:03'));
+});
+
+test('student history counts present, late, absent and not yet', () => {
+  clockOn(daysAgo(3), '08:01');
+  store.checkIn(classId, bob); // Ann has no check-in that day, which is over: absent
+  clockOn(daysAgo(2), '08:03');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '08:09');
+  store.checkIn(classId, ann);
+  clock('08:02');
+  store.checkIn(classId, bob);
+  assert.deepEqual(store.studentHistory(classId, ann).counts, { present: 1, late: 1, absent: 1, notyet: 1 });
+});
+
+test('an edited day shows as overridden with no minutes late', () => {
+  clockOn(daysAgo(1), '08:09');
+  store.checkIn(classId, ann);
+  clock('08:00');
+  store.setOverride(classId, daysAgo(1), ann, 'present');
+  const [edited] = store.studentHistory(classId, ann).days;
+  assert.deepEqual([edited.status, edited.overridden, edited.minutesLate], ['present', true, null]);
+});
+
+test('student history lists only that student’s trips in that class, with the override reason', () => {
+  clockOn(daysAgo(1), '08:20');
+  store.markOut(classId, daysAgo(1), ann);
+  clockOn(daysAgo(1), '08:25');
+  store.markReturned(classId, daysAgo(1), ann);
+  clock('08:15');
+  store.markOut(classId, day, ann);
+  clock('08:20');
+  store.markReturned(classId, day, ann);
+  store.markOut(classId, day, bob);
+  clock('08:25');
+  store.markReturned(classId, day, bob);
+  clock('08:32');
+  store.markOut(classId, day, ann, 'Nurse pass');
+  const { trips, days } = store.studentHistory(classId, ann);
+  assert.deepEqual(trips.map((t) => [t.date, t.departedAt, t.returnedAt, t.overrideReason]), [
+    [day, atTime(day, '08:32'), null, 'Nurse pass'],
+    [day, atTime(day, '08:15'), atTime(day, '08:20'), ''],
+    [daysAgo(1), atTime(daysAgo(1), '08:20'), atTime(daysAgo(1), '08:25'), ''],
+  ]);
+  assert.deepEqual(days.map((d) => d.date), [day, daysAgo(1)]); // a trip makes it a class day
+});
+
+test('days with no records for the class are skipped', () => {
+  const other = store.addClass('Period 2', '09:00', 5);
+  store.addStudents(other, ['Dee Dunn']);
+  clockOn(daysAgo(2), '08:03');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '09:01');
+  store.checkIn(other, store.classById(other).students[0].id); // another class's day doesn't count here
+  clock('08:00');
+  assert.deepEqual(store.studentHistory(classId, bob).days.map((d) => [d.date, d.status]), [[daysAgo(2), 'absent']]);
+  assert.equal(store.studentHistory(classId, 'gone'), null);
+});
+
+test('a student added later has history only from the day they joined, and the date survives a backup', () => {
+  clockOn(daysAgo(2), '08:01');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '07:30');
+  store.addStudents(classId, ['Eve Evans']);
+  const eve = store.classById(classId).students.find((s) => s.name === 'Eve Evans').id;
+  clockOn(daysAgo(1), '08:02');
+  store.checkIn(classId, ann);
+  clock('08:00');
+  assert.deepEqual(store.studentHistory(classId, eve).days.map((d) => [d.date, d.status]), [[daysAgo(1), 'absent']]);
+  assert.equal(store.studentHistory(classId, bob).days.length, 2);
+  store.restoreBackup(store.readBackup(store.backupText()));
+  assert.equal(store.classById(classId).students.find((s) => s.id === eve).addedOn, daysAgo(1));
+});
+
+test('before a student was added they show as not added yet, and an edit still counts', () => {
+  clockOn(daysAgo(2), '08:01');
+  store.checkIn(classId, ann);
+  clockOn(daysAgo(1), '07:30');
+  store.addStudents(classId, ['Eve Evans']);
+  const eve = store.classById(classId).students.find((s) => s.name === 'Eve Evans').id;
+  clock('08:00');
+  const cls = store.classById(classId);
+  assert.deepEqual(
+    [daysAgo(2), daysAgo(1), day].map((d) => store.statusFor(cls, d, eve)), ['notadded', 'absent', 'notyet']);
+  assert.equal(store.STATUSES.notadded, 'Not added yet');
+  assert.equal(store.dayRows(classId, daysAgo(2)).find((r) => r.student.id === eve).status, 'notadded');
+  store.markRestPresent(classId, daysAgo(2)); // marks Bob and Cy present, leaves Eve alone
+  assert.deepEqual([bob, cy, eve].map((id) => store.statusFor(cls, daysAgo(2), id)), ['present', 'present', 'notadded']);
+  store.setOverride(classId, daysAgo(2), eve, 'late');
+  assert.equal(store.statusFor(cls, daysAgo(2), eve), 'late');
+  const history = store.studentHistory(classId, eve);
+  assert.deepEqual(history.days.map((d) => [d.date, d.status, d.overridden]), [[daysAgo(2), 'late', true]]);
+  assert.equal(history.counts.late, 1);
+  store.setOverride(classId, daysAgo(2), eve, null);
+  assert.equal(store.statusFor(cls, daysAgo(2), eve), 'notadded');
+});
+
+test('students from an old backup, with no added date, stay absent on past days', () => {
+  store.restoreBackup(store.readBackup(JSON.stringify({
+    app: 'class-checkin-v1',
+    classes: [{ id: 'o', name: 'Old', lateAfter: '08:00', students: [{ id: 'p', name: 'Pat Old' }, { id: 'q', name: 'Quinn Old' }] }],
+    checkIns: [{ id: 'z', classId: 'o', studentId: 'p', date: daysAgo(3), at: atTime(daysAgo(3), '07:59') }],
+  })));
+  const cls = store.classById('o');
+  assert.equal(store.statusFor(cls, daysAgo(3), 'q'), 'absent');
+  assert.equal(store.getState().checkIns.length, 1);
+  assert.equal(cls.students.length, 2);
+});
+
 // ---------- Period 7 demo ----------
 test('the demo has its own clock, its own records, and resets without touching real classes', () => {
   store.openDemo();
@@ -250,6 +377,19 @@ test('the demo has its own clock, its own records, and resets without touching r
   store.resetDemo();
   assert.equal(store.getState().trips.length, 0);
   assert.equal(store.getState().classes.length, 2); // the real class and the demo
+});
+
+test('demo data includes past restroom trips that show in a student’s history', () => {
+  store.loadDemo();
+  const { trips, checkIns, classes } = store.getState();
+  assert.equal(checkIns.length, 218); // the demo check-ins are the same as before trips were added
+  assert.ok(trips.length >= 2 * 5 * classes.length);
+  assert.ok(trips.every((t) => t.returnedAt > t.departedAt && t.date === undefined && t.sessionId === `${t.classId}|${dateKey(new Date(t.departedAt))}`));
+  const nurse = trips.find((t) => t.overrideReason === 'Nurse pass');
+  const history = store.studentHistory(nurse.classId, nurse.studentId);
+  assert.ok(history.trips.some((t) => t.id === nurse.id && t.overrideReason === 'Nurse pass'));
+  const twice = trips.find((t) => trips.some((o) => o !== t && o.studentId === t.studentId && o.sessionId === t.sessionId));
+  assert.ok(twice, 'one student goes twice on one day');
 });
 
 // ---------- Saving ----------
@@ -311,4 +451,35 @@ test('an old save upgrades on load and keeps a copy of the original', async () =
   assert.deepEqual([cls.startTime, cls.lateMinutes], ['09:05', 0]);
   assert.equal(fresh.statusFor(cls, day, 's'), 'late');
   assert.equal(globalThis.localStorage.getItem('class-checkin-v1-backup'), saved);
+});
+
+test('student history works on an old save and a pre-trips backup, and nothing is lost', async () => {
+  const saved = JSON.stringify({
+    classes: [{ id: 'c', name: 'Old', lateAfter: '09:05', students: [{ id: 's', name: 'Sam Old' }, { id: 't', name: 'Tia Old' }] }],
+    checkIns: [
+      { id: 'x', classId: 'c', studentId: 's', date: daysAgo(1), at: atTime(daysAgo(1), '09:07') },
+      { id: 'y', classId: 'c', studentId: 't', date: day, at: atTime(day, '09:00') },
+    ],
+    overrides: {},
+  });
+  globalThis.localStorage = memoryStorage({ 'class-checkin-v1': saved });
+  const fresh = await import('../js/store.js?old-history');
+  const history = fresh.studentHistory('c', 's');
+  assert.deepEqual(history.days.map((d) => [d.date, d.status]), [[day, 'notyet'], [daysAgo(1), 'late']]);
+  assert.deepEqual(history.trips, []);
+  assert.equal(fresh.getState().checkIns.length, 2);
+  assert.equal(fresh.classById('c').students.length, 2);
+  assert.equal(globalThis.localStorage.getItem('class-checkin-v1-backup'), saved);
+
+  // A backup from before start times and trips restores, and history reads it.
+  const backup = JSON.stringify({
+    app: 'class-checkin-v1',
+    classes: [{ id: 'b', name: 'Backup', lateAfter: '08:00', students: [{ id: 'u', name: 'Uma Backup' }] }],
+    checkIns: [{ id: 'z', classId: 'b', studentId: 'u', date: daysAgo(2), at: atTime(daysAgo(2), '07:58') }],
+    overrides: {},
+  });
+  fresh.restoreBackup(fresh.readBackup(backup));
+  assert.deepEqual(fresh.studentHistory('b', 'u').days.map((d) => [d.date, d.status]), [[daysAgo(2), 'present']]);
+  assert.equal(fresh.getState().checkIns.length, 1);
+  assert.equal(fresh.getState().trips.length, 0);
 });
